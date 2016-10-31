@@ -66,6 +66,9 @@ int tls_start_tcp(struct tls_conn **ptc, struct tls *tls,
 /* UDP (DTLS) */
 
 typedef void (dtls_conn_h)(const struct sa *peer, void *arg);
+typedef int (dtls_send_h)(struct tls_conn *tc, const struct sa *dst,
+		struct mbuf *mb, void *arg);
+typedef size_t (dtls_mtu_h)(struct tls_conn *tc, void *arg);
 typedef void (dtls_estab_h)(void *arg);
 typedef void (dtls_recv_h)(struct mbuf *mb, void *arg);
 typedef void (dtls_close_h)(int err, void *arg);
@@ -75,6 +78,9 @@ struct dtls_sock;
 int dtls_listen(struct dtls_sock **sockp, const struct sa *laddr,
 		struct udp_sock *us, uint32_t htsize, int layer,
 		dtls_conn_h *connh, void *arg);
+int dtls_socketless(struct dtls_sock **sockp, uint32_t htsize,
+		dtls_conn_h *connh, dtls_send_h *sendh, dtls_mtu_h *mtuh,
+		void *arg);
 struct udp_sock *dtls_udp_sock(struct dtls_sock *sock);
 void dtls_set_mtu(struct dtls_sock *sock, size_t mtu);
 int dtls_connect(struct tls_conn **ptc, struct tls *tls,
@@ -86,6 +92,7 @@ int dtls_accept(struct tls_conn **ptc, struct tls *tls,
 		dtls_estab_h *estabh, dtls_recv_h *recvh,
 		dtls_close_h *closeh, void *arg);
 int dtls_send(struct tls_conn *tc, struct mbuf *mb);
+void dtls_receive(struct dtls_sock *sock, struct sa *src, struct mbuf *mb);
 void dtls_set_handlers(struct tls_conn *tc, dtls_estab_h *estabh,
 		       dtls_recv_h *recvh, dtls_close_h *closeh, void *arg);
 const struct sa *dtls_peer(const struct tls_conn *tc);
