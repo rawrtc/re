@@ -904,7 +904,7 @@ static int set_dh_params(struct tls *tls, DH *dh)
 	}
 
 #if OPENSSL_VERSION_NUMBER >= 0x1000200fL
-	r = SSL_CTX_set_ecdh_auto(tls->ctx, 1);
+	r = SSL_CTX_set_ecdh_auto(tls->ctx, (long) 1);
 	if (!r) {
 		DEBUG_WARNING("set_dh_params: set_ecdh_auto failed\n");
 		return ENOMEM;
