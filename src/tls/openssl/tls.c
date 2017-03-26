@@ -841,7 +841,8 @@ int tls_set_ciphers(struct tls *tls, const char *cipherv[], size_t count)
 
 static int set_dh_params(struct tls *tls, DH *dh)
 {
-	int codes, r;
+	int codes;
+	long r;
 #if OPENSSL_VERSION_NUMBER < 0x1000200fL
 	EC_KEY *ec_key;
 #endif
