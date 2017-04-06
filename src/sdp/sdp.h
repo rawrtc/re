@@ -10,6 +10,10 @@ enum {
 	RTP_DYNPT_END   = 127,
 };
 
+enum {
+	MEDIA_LADDR_SET = 1<<0,
+};
+
 
 struct sdp_session {
 	struct list lmedial;
@@ -27,6 +31,7 @@ struct sdp_session {
 
 struct sdp_media {
 	struct le le;
+	uint8_t flags;
 	struct list lfmtl;
 	struct list rfmtl;
 	struct list lattrl;
