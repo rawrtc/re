@@ -446,6 +446,7 @@ void sdp_media_set_laddr(struct sdp_media *m, const struct sa *laddr)
 	if (!m || !laddr)
 		return;
 
+	m->flags |= MEDIA_LADDR_SET;
 	m->laddr = *laddr;
 }
 

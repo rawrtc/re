@@ -398,7 +398,7 @@ static int media_encode(const struct sdp_media *m, struct mbuf *mb, bool offer)
 
 	err |= mbuf_write_str(mb, "\r\n");
 
-	if (sa_isset(&m->laddr, SA_ADDR)) {
+	if (m->flags & MEDIA_LADDR_SET) {
 		const int ipver = sa_af(&m->laddr) == AF_INET ? 4 : 6;
 		err |= mbuf_printf(mb, "c=IN IP%d %j\r\n", ipver, &m->laddr);
 	}
