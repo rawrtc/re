@@ -514,6 +514,25 @@ void sdp_media_set_ldir(struct sdp_media *m, enum sdp_dir dir)
 
 
 /**
+ * Set whether the local direction flag of an SDP media line should be excluded
+ * when encoding. Defaults to false.
+ *
+ * @param m       SDP Media line
+ * @param exclude Exclude direction flag
+ */
+void sdp_media_ldir_exclude(struct sdp_media *m, bool exclude)
+{
+	if (!m)
+		return;
+
+	if (exclude)
+		m->flags |= MEDIA_LDIR_EXCLUDE;
+	else
+		m->flags &= ~MEDIA_LDIR_EXCLUDE;
+}
+
+
+/**
  * Set a local attribute of an SDP Media line
  *
  * @param m       SDP Media line

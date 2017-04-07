@@ -12,6 +12,7 @@ enum {
 
 enum {
 	MEDIA_LADDR_SET = 1<<0,
+	MEDIA_LDIR_EXCLUDE = 1<<1,
 };
 
 
