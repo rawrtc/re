@@ -224,9 +224,10 @@ static void conn_keepalive_handler(void *arg)
 		mem_deref(conn);
 		return;
 	}
-
+printf("%s::%s:%d\n", __FILE__, __func__, __LINE__);
 	tmr_start(&conn->tmr, TCP_KEEPALIVE_TIMEOUT * 1000,
 		  conn_tmr_handler, conn);
+		  printf("%s::%s:%d\n", __FILE__, __func__, __LINE__);
 	tmr_start(&conn->tmr_ka, sip_keepalive_wait(conn->ka_interval),
 		  conn_keepalive_handler, conn);
 }
@@ -358,7 +359,7 @@ static void tcp_recv_handler(struct mbuf *mb, void *arg)
 			break;
 
 		if (!memcmp(mbuf_buf(conn->mb), "\r\n", 2)) {
-
+printf("%s::%s:%d\n", __FILE__, __func__, __LINE__);
 			tmr_start(&conn->tmr, TCP_IDLE_TIMEOUT * 1000,
 				  conn_tmr_handler, conn);
 
@@ -410,7 +411,7 @@ static void tcp_recv_handler(struct mbuf *mb, void *arg)
 			mem_deref(msg);
 			break;
 		}
-
+printf("%s::%s:%d\n", __FILE__, __func__, __LINE__);
 		tmr_start(&conn->tmr, TCP_IDLE_TIMEOUT * 1000,
 			  conn_tmr_handler, conn);
 
@@ -526,7 +527,7 @@ static void tcp_connect_handler(const struct sa *paddr, void *arg)
 			goto out;
 	}
 #endif
-
+printf("%s::%s:%d\n", __FILE__, __func__, __LINE__);
 	tmr_start(&conn->tmr, TCP_ACCEPT_TIMEOUT * 1000,
 		  conn_tmr_handler, conn);
 
@@ -586,7 +587,7 @@ static int conn_send(struct sip_connqent **qentp, struct sip *sip, bool secure,
 			goto out;
 	}
 #endif
-
+printf("%s::%s:%d\n", __FILE__, __func__, __LINE__);
 	tmr_start(&conn->tmr, TCP_IDLE_TIMEOUT * 1000, conn_tmr_handler, conn);
 
  enqueue:
@@ -972,7 +973,7 @@ int  sip_keepalive_tcp(struct sip_keepalive *ka, struct sip_conn *conn,
 			       TCP_KEEPALIVE_TIMEOUT * 2);
 
 		conn->ka_interval = interval;
-
+printf("%s::%s:%d\n", __FILE__, __func__, __LINE__);
 		tmr_start(&conn->tmr_ka, sip_keepalive_wait(conn->ka_interval),
 			  conn_keepalive_handler, conn);
 	}

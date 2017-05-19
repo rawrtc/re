@@ -104,6 +104,7 @@ static void tmr_handler(void *arg)
 
 	err = request(reg, true);
 	if (err) {
+	printf("%s::%s:%d\n", __FILE__, __func__, __LINE__);
 		tmr_start(&reg->tmr, failwait(++reg->failc), tmr_handler, reg);
 		reg->resph(err, NULL, reg->arg);
 	}
@@ -117,7 +118,7 @@ static void keepalive_handler(int err, void *arg)
 	/* failure will be handled in response handler */
 	if (reg->req || reg->terminated)
 		return;
-
+printf("%s::%s:%d\n", __FILE__, __func__, __LINE__);
 	tmr_start(&reg->tmr, failwait(++reg->failc), tmr_handler, reg);
 	reg->resph(err, NULL, reg->arg);
 }
@@ -244,6 +245,7 @@ static void response_handler(int err, const struct sip_msg *msg, void *arg)
 			mem_deref(reg);
 	}
 	else {
+	printf("%s::%s:%d\n", __FILE__, __func__, __LINE__);
 		tmr_start(&reg->tmr, reg->wait, tmr_handler, reg);
 		reg->resph(err, msg, reg->arg);
 	}

@@ -110,7 +110,7 @@ static void conn_destructor(void *arg)
 		conn->recvh  = dummy_recv_handler;
 		conn->closeh = internal_close_handler;
 		conn->arg    = conn;
-
+printf("%s::%s:%d\n", __FILE__, __func__, __LINE__);
 		tmr_start(&conn->tmr, TIMEOUT_CLOSE, timeout_handler, conn);
 
 		/* important: the hack below depends on this */
@@ -149,7 +149,7 @@ static void timeout_handler(void *arg)
 static void keepalive_handler(void *arg)
 {
 	struct websock_conn *conn = arg;
-
+printf("%s::%s:%d\n", __FILE__, __func__, __LINE__);
 	tmr_start(&conn->tmr, conn->kaint, keepalive_handler, conn);
 
 	(void)websock_send(conn, WEBSOCK_PING, NULL);
@@ -419,8 +419,10 @@ static void http_resp_handler(int err, const struct http_msg *msg, void *arg)
 	tcp_set_handlers(conn->tc, NULL, recv_handler, close_handler, conn);
 	conn->req = mem_deref(conn->req);
 
-	if (conn->kaint)
+	if (conn->kaint) {
+	printf("%s::%s:%d\n", __FILE__, __func__, __LINE__);
 		tmr_start(&conn->tmr, conn->kaint, keepalive_handler, conn);
+	}
 
 	conn->estabh(conn->arg);
 	return;
@@ -555,8 +557,10 @@ int websock_accept(struct websock_conn **connp, struct websock *sock,
 	tcp_set_handlers(conn->tc, NULL, recv_handler, close_handler, conn);
 	http_conn_close(htconn);
 
-	if (conn->kaint)
+	if (conn->kaint) {
+	printf("%s::%s:%d\n", __FILE__, __func__, __LINE__);
 		tmr_start(&conn->tmr, conn->kaint, keepalive_handler, conn);
+	}
 
  out:
 	if (err)

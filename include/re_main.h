@@ -3,7 +3,10 @@
  *
  * Copyright (C) 2010 Creytiv.com
  */
-
+// #include <uv.h>
+#include "/usr/local/include/uv.h"
+ #include "re_tmr.h"
+ #include "re_list.h"
 
 enum {
 #ifndef FD_READ
@@ -13,6 +16,11 @@ enum {
 	FD_WRITE  = 1<<1,
 #endif
 	FD_EXCEPT = 1<<2
+};
+
+enum external_loop {
+	LOOP_NONE = 0,
+	LOOP_UV
 };
 
 
@@ -51,6 +59,13 @@ void re_thread_leave(void);
 
 void re_set_mutex(void *mutexp);
 
+struct external_handle {
+	struct le le;
+	uv_handle_t *handle;
+	uv_handle_type type;
+	void *data;
+};
+
 
 /** Polling methods */
 enum poll_method {
@@ -67,3 +82,11 @@ int              poll_method_set(enum poll_method method);
 enum poll_method poll_method_best(void);
 const char      *poll_method_name(enum poll_method method);
 int poll_method_type(enum poll_method *method, const struct pl *name);
+
+/** Methods to handle external event loop */
+void external_loop_set(enum external_loop loop, uv_loop_t *arg);
+enum external_loop re_get_external_loop_type(void);
+uv_loop_t* re_get_external_loop(void);
+void uv_start_timer(struct tmr *tmr);
+void init_external_handles(void);
+int alloc_fds(int maxfds);

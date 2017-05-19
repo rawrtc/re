@@ -177,7 +177,7 @@ static void recv_handler(struct mbuf *mb, void *arg)
 			err = ENOTCONN;
 			goto out;
 		}
-
+printf("%s::%s:%d\n", __FILE__, __func__, __LINE__);
 		tmr_start(&conn->tmr, TIMEOUT_IDLE, timeout_handler, conn);
 	}
 
@@ -227,7 +227,7 @@ static void connect_handler(const struct sa *peer, void *arg)
 			goto out;
 	}
 #endif
-
+printf("%s::%s:%d\n", __FILE__, __func__, __LINE__);
 	tmr_start(&conn->tmr, TIMEOUT_INIT, timeout_handler, conn);
 
  out:

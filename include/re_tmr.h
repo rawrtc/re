@@ -1,10 +1,13 @@
+#pragma once
 /**
  * @file re_tmr.h  Interface to timer implementation
  *
  * Copyright (C) 2010 Creytiv.com
  */
 
-
+// #include <uv.h>
+#include "/usr/local/include/uv.h"
+#include "re_list.h"
 /**
  * Defines the timeout handler
  *
@@ -44,3 +47,5 @@ static inline bool tmr_isrunning(const struct tmr *tmr)
 {
 	return tmr ? NULL != tmr->th : false;
 }
+
+void handle_external(uv_timer_t *handle);

@@ -231,8 +231,9 @@ static int reply_recv(struct dnsc *dnsc, struct mbuf *mb)
 	/* try next server */
 	if (dq.hdr.rcode == DNS_RCODE_SRV_FAIL && q->ntx < *q->srvc) {
 
-		if (!q->tc) /* try next UDP server immediately */
+		if (!q->tc) { /* try next UDP server immediately */
 			tmr_start(&q->tmr, 0, udp_timeout_handler, q);
+		}
 
 		err = EPROTO;
 		goto out;
@@ -391,7 +392,7 @@ static void tcp_estab_handler(void *arg)
 		tcpconn_close(tc, err);
 		return;
 	}
-
+printf("%s::%s%d\n", __FILE__, __func__, __LINE__);
 	tmr_start(&tc->tmr, tc->dnsc->conf.idle_timeout,
 		  tcpconn_timeout_handler, tc);
 	tc->connected = true;
@@ -498,7 +499,7 @@ static int tcpconn_alloc(struct tcpconn **tcpp, struct dnsc *dnsc,
 			  tcp_recv_handler, tcp_close_handler, tc);
 	if (err)
 		goto out;
-
+printf("%s::%s%d\n", __FILE__, __func__, __LINE__);
 	tmr_start(&tc->tmr, tc->dnsc->conf.conn_timeout,
 		  tcpconn_timeout_handler, tc);
  out:
@@ -543,7 +544,7 @@ static int send_tcp(struct dns_query *q)
 				tcpconn_close(tc, err);
 				continue;
 			}
-
+printf("%s::%s%d\n", __FILE__, __func__, __LINE__);
 			tmr_start(&tc->tmr, tc->dnsc->conf.idle_timeout,
 				  tcpconn_timeout_handler, tc);
 			DEBUG_NOTICE("tcp send %J\n", srv);
@@ -596,14 +597,14 @@ static void udp_timeout_handler(void *arg)
 {
 	struct dns_query *q = arg;
 	int err = ETIMEDOUT;
-
+printf("udp_timeout_handler\n");
 	if (q->ntx >= NTX_MAX)
 		goto out;
 
 	err = send_udp(q);
 	if (err)
 		goto out;
-
+printf("%s::%s%d\n", __FILE__, __func__, __LINE__);
 	tmr_start(&q->tmr, 1000<<MIN(2, q->ntx - 2),
 		  udp_timeout_handler, q);
 
@@ -632,7 +633,7 @@ static int query(struct dns_query **qp, struct dnsc *dnsc, uint8_t opcode,
 	if (DNS_QTYPE_AXFR == type)
 		proto = IPPROTO_TCP;
 
-	q = mem_zalloc(sizeof(*q), query_destructor);
+	q = mem_zalloc(sizeof(struct dns_query), query_destructor);
 	if (!q)
 		goto nmerr;
 
@@ -698,7 +699,7 @@ static int query(struct dns_query **qp, struct dnsc *dnsc, uint8_t opcode,
 		err = send_tcp(q);
 		if (err)
 			goto error;
-
+printf("%s::%s%d\n", __FILE__, __func__, __LINE__);
 		tmr_start(&q->tmr, 60 * 1000, tcp_timeout_handler, q);
 		break;
 
@@ -706,7 +707,7 @@ static int query(struct dns_query **qp, struct dnsc *dnsc, uint8_t opcode,
 		err = send_udp(q);
 		if (err)
 			goto error;
-
+printf("%s::%s%d\n", __FILE__, __func__, __LINE__);
 		tmr_start(&q->tmr, 500, udp_timeout_handler, q);
 		break;
 

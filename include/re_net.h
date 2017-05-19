@@ -20,13 +20,14 @@
 #endif
 
 
+#if 0
 #ifndef HAVE_GAI_STRERROR
 /** stub */
 #ifndef gai_strerror
 #define gai_strerror(err) "?"
 #endif
 #endif
-
+#endif
 /** Length of IPv4 address string */
 #ifndef INET_ADDRSTRLEN
 #define INET_ADDRSTRLEN 16

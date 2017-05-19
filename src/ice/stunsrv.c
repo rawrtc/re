@@ -18,7 +18,7 @@
 
 
 #define DEBUG_MODULE "stunsrv"
-#define DEBUG_LEVEL 5
+#define DEBUG_LEVEL 7
 #include <re_dbg.h>
 
 

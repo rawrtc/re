@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file re_list.h  Interface to Linked List
  *

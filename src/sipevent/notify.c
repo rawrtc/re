@@ -109,7 +109,7 @@ static void tmr_handler(void *arg)
 void sipnot_refresh(struct sipnot *not, uint32_t expires)
 {
 	not->expires = min(expires, not->expires_max);
-
+printf("%s::%s:%d\n", __FILE__, __func__, __LINE__);
 	tmr_start(&not->tmr, not->expires * 1000, tmr_handler, not);
 }
 

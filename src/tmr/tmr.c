@@ -21,10 +21,11 @@
 #include <re_fmt.h>
 #include <re_mem.h>
 #include <re_tmr.h>
+#include <re_main.h>
 
 
 #define DEBUG_MODULE "tmr"
-#define DEBUG_LEVEL 5
+#define DEBUG_LEVEL 7
 #include <re_dbg.h>
 
 
@@ -38,6 +39,7 @@ enum {
 };
 
 extern struct list *tmrl_get(void);
+extern struct list *handles_get(void);
 
 
 static bool inspos_handler(struct le *le, void *arg)
@@ -85,7 +87,7 @@ static void call_handler(tmr_h *th, void *arg)
 void tmr_poll(struct list *tmrl)
 {
 	const uint64_t jfs = tmr_jiffies();
-
+//printf("%s\n", __func__);
 	for (;;) {
 		struct tmr *tmr;
 		tmr_h *th;
@@ -159,7 +161,7 @@ uint64_t tmr_next_timeout(struct list *tmrl)
 {
 	const uint64_t jif = tmr_jiffies();
 	const struct tmr *tmr;
-
+//printf("%s\n", __func__);
 	tmr = list_ledata(tmrl->head);
 	if (!tmr)
 		return 0;
@@ -222,8 +224,70 @@ void tmr_init(struct tmr *tmr)
 		return;
 
 	memset(tmr, 0, sizeof(*tmr));
+
+	if (re_get_external_loop_type() == LOOP_UV) {
+		printf("uv timer_init\n");
+		uv_loop_t *uv_loop = (uv_loop_t *)re_get_external_loop();
+		struct external_handle *ext_handle = calloc(1, sizeof(*ext_handle));
+		ext_handle->type = UV_TIMER;
+		uv_timer_t *timer_handle = calloc(1, sizeof(uv_timer_t));
+		if (uv_timer_init(uv_loop, timer_handle) < 0) {
+			printf("error initializing timer\n");
+			return;
+		}
+		ext_handle->handle = (uv_handle_t *)timer_handle;
+		ext_handle->handle->data = (void *)tmr;
+		ext_handle->data = (void *)tmr;
+		list_append(handles_get(), &ext_handle->le, ext_handle);
+		printf("init timer=%p timer_handle=%p \n", (void *)tmr, (void *)ext_handle->handle);
+	}
 }
 
+void handle_external(uv_timer_t *handle)
+{
+	printf("handle_external_timer\n");
+	struct tmr *timer = handle->data;
+	printf("timer=%p \n", (void *)timer);
+	timer->th(timer->arg);
+}
+
+
+static uv_handle_t *find_handle_for_timer(struct tmr *tmr)
+{
+	struct list *handles = handles_get();
+	struct le *le;
+	struct external_handle *el;
+
+	le = list_head(handles);
+	while (le != NULL) {
+		el = le->data;
+		if (el->type == UV_TIMER) {
+			if (el->data == tmr) {
+				return el->handle;
+			}
+		}
+		le = le->next;
+	}
+	return NULL;
+}
+
+/*void clear_handle_list()
+{
+	struct list *handles = handles_get();
+	struct le *le;
+	struct external_handle *el;
+
+	le = list_head(handles);
+	while (le != NULL) {
+		el = le->data;
+		if (el->type == UV_TIMER) {
+			free(el->data);
+			free(el->handle);
+			free(el);
+		}
+		le = le->next;
+	}
+}*/
 
 /**
  * Start a timer
@@ -235,6 +299,21 @@ void tmr_init(struct tmr *tmr)
  */
 void tmr_start(struct tmr *tmr, uint64_t delay, tmr_h *th, void *arg)
 {
+	if (re_get_external_loop_type() == LOOP_UV) {
+	printf("start libuv timer\n");
+	printf("tmr=%p delay=%ld, arg=%p\n", (void *)tmr, delay, (void *)arg);
+		tmr->th  = th;
+		tmr->arg = arg;
+		tmr->jfs = delay + tmr_jiffies();
+		uv_handle_t *timer_handle = find_handle_for_timer(tmr);
+		if (uv_timer_start((uv_timer_t *)timer_handle, handle_external, delay, 0) < 0) {
+			printf("error starting timer\n");
+			return;
+		}
+		timer_handle->data = tmr;
+		return;
+	}
+
 	struct list *tmrl = tmrl_get();
 	struct le *le;
 
@@ -281,7 +360,13 @@ void tmr_start(struct tmr *tmr, uint64_t delay, tmr_h *th, void *arg)
  */
 void tmr_cancel(struct tmr *tmr)
 {
-	tmr_start(tmr, 0, NULL, NULL);
+	if (re_get_external_loop_type() == LOOP_UV) {
+		uv_handle_t *timer_handle = find_handle_for_timer(tmr);
+		printf("stop libuv timer %p\n", (void *)timer_handle);
+		uv_timer_stop((uv_timer_t *)timer_handle);
+	} else {
+		tmr_start(tmr, 0, NULL, NULL);
+	}
 }
 
 

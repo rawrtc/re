@@ -17,6 +17,7 @@
 #include <re_tmr.h>
 #include <re_md5.h>
 #include <re_stun.h>
+#include <re_main.h>
 #include "stun.h"
 
 
@@ -93,7 +94,7 @@ static void timeout_handler(void *arg)
 		goto error;
 
 	ct->ival = (ct->txc >= cfg->rc) ? cfg->rto * cfg->rm : ct->ival * 2;
-
+printf("%s::%s:%d\n", __FILE__, __func__, __LINE__);
 	tmr_start(&ct->tmr, ct->ival, timeout_handler, ct);
 	return;
 
@@ -247,6 +248,7 @@ int stun_ctrans_request(struct stun_ctrans **ctp, struct stun *stun, int proto,
 	ct->pos   = mb->pos;
 	ct->stun  = stun;
 	ct->met   = met;
+	tmr_init(&ct->tmr);
 
 	if (key) {
 		ct->key = mem_alloc(keylen, NULL);
@@ -269,6 +271,7 @@ int stun_ctrans_request(struct stun_ctrans **ctp, struct stun *stun, int proto,
 
 		ct->dst = *dst;
 		ct->ival = stun_conf(stun)->rto;
+		printf("%s::%s:%d\n", __FILE__, __func__, __LINE__);
 		tmr_start(&ct->tmr, ct->ival, timeout_handler, ct);
 
 		if (!sock) {
@@ -284,6 +287,7 @@ int stun_ctrans_request(struct stun_ctrans **ctp, struct stun *stun, int proto,
 
 	case IPPROTO_TCP:
 		ct->txc = stun_conf(stun)->rc;
+		printf("%s::%s:%d\n", __FILE__, __func__, __LINE__);
 		tmr_start(&ct->tmr, stun_conf(stun)->ti, timeout_handler, ct);
 		if (sock) {
 			err = tcp_send(sock, mb);
@@ -303,6 +307,7 @@ int stun_ctrans_request(struct stun_ctrans **ctp, struct stun *stun, int proto,
 		}
 
 		ct->ival = stun_conf(stun)->rto;
+		printf("%s::%s:%d\n", __FILE__, __func__, __LINE__);
 		tmr_start(&ct->tmr, ct->ival, timeout_handler, ct);
 
 		ct->txc = 1;

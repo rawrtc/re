@@ -69,7 +69,7 @@ static void dispatch(struct bfcp_conn *bc)
 			mem_deref(ct);
 			continue;
 		}
-
+printf("%s::%s%d\n", __FILE__, __func__, __LINE__);
 		tmr_start(&bc->tmr1, BFCP_T1, tmr_handler, bc);
 		bc->txc = 1;
 		break;
@@ -98,7 +98,7 @@ static void tmr_handler(void *arg)
 	err = bfcp_send(bc, &ct->dst, ct->mb);
 	if (err)
 		goto out;
-
+printf("%s::%s%d\n", __FILE__, __func__, __LINE__);
 	tmr_start(&bc->tmr1, timeout, tmr_handler, bc);
 	return;
 
@@ -182,7 +182,7 @@ int bfcp_vrequest(struct bfcp_conn *bc, const struct sa *dst, uint8_t ver,
 		err = bfcp_send(bc, &ct->dst, ct->mb);
 		if (err)
 			goto out;
-
+printf("%s::%s%d\n", __FILE__, __func__, __LINE__);
 		tmr_start(&bc->tmr1, BFCP_T1, tmr_handler, bc);
 		bc->txc = 1;
 	}

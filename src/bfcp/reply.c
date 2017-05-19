@@ -72,7 +72,7 @@ int bfcp_reply(struct bfcp_conn *bc, const struct bfcp_msg *req,
 	bc->st.confid = req->confid;
 	bc->st.tid    = req->tid;
 	bc->st.userid = req->userid;
-
+printf("%s::%s%d\n", __FILE__, __func__, __LINE__);
 	tmr_start(&bc->tmr2, BFCP_T2, tmr_handler, bc);
 
  out:

@@ -502,6 +502,18 @@ LIBS    += -lz
 endif
 
 
+USE_LIBUV    := $(shell [ -f $(SYSROOT)/include/uv.h ] || \
+	[ -f $(SYSROOT)/local/include/uv.h ] || \
+	[ -f $(SYSROOT_ALT)/include/uv.h ] && echo "yes")
+
+ifneq ($(USE_LIBUV),)
+CFLAGS  += -DHAVE_LIBUV
+LIBS    += -luv
+endif
+
+CFLAGS  += -DHAVE_LIBUV
+LIBS    += -luv
+
 ifneq ($(OS),win32)
 
 HAVE_PTHREAD    := $(shell [ -f $(SYSROOT)/include/pthread.h ] && echo "1")

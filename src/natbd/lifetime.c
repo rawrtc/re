@@ -108,7 +108,7 @@ static void stun_response_handler_x(int err, uint16_t scode,
 
 		DEBUG_INFO("Starting timer of %d seconds...[zzz]...\n",
 			   nl->interval.cur);
-
+printf("%s::%s%d\n", __FILE__, __func__, __LINE__);
 		tmr_start(&nl->tmr, nl->interval.cur*1000, timeout, nl);
 		return;
 

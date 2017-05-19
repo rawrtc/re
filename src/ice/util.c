@@ -24,7 +24,7 @@
 
 
 #define DEBUG_MODULE "iceutil"
-#define DEBUG_LEVEL 5
+#define DEBUG_LEVEL 7
 #include <re_dbg.h>
 
 

@@ -80,6 +80,7 @@ static void reinvite_resp_handler(int err, const struct sip_msg *msg,
 			return;
 
 		case 491:
+		printf("%s::%s:%d\n", __FILE__, __func__, __LINE__);
 			tmr_start(&sess->tmr, sess->owner ? 3000 : 1000,
 				  tmr_handler, sess);
 			return;
@@ -88,7 +89,7 @@ static void reinvite_resp_handler(int err, const struct sip_msg *msg,
 			hdr = sip_msg_hdr(msg, SIP_HDR_RETRY_AFTER);
 			if (!hdr)
 				break;
-
+printf("%s::%s:%d\n", __FILE__, __func__, __LINE__);
 			tmr_start(&sess->tmr, pl_u32(&hdr->val) * 1000,
 				  tmr_handler, sess);
 			return;

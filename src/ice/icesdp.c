@@ -18,7 +18,7 @@
 
 
 #define DEBUG_MODULE "icesdp"
-#define DEBUG_LEVEL 5
+#define DEBUG_LEVEL 7
 #include <re_dbg.h>
 
 

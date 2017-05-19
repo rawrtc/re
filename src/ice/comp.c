@@ -20,7 +20,7 @@
 
 
 #define DEBUG_MODULE "icecomp"
-#define DEBUG_LEVEL 5
+#define DEBUG_LEVEL 7
 #include <re_dbg.h>
 
 
@@ -233,7 +233,7 @@ static void timeout(void *arg)
 {
 	struct icem_comp *comp = arg;
 	struct ice_candpair *cp;
-
+printf("%s::%s%d\n", __FILE__, __func__, __LINE__);
 	tmr_start(&comp->tmr_ka, ICE_DEFAULT_Tr * 1000 + rand_u16() % 1000,
 		  timeout, comp);
 
@@ -254,6 +254,7 @@ void icem_comp_keepalive(struct icem_comp *comp, bool enable)
 		return;
 
 	if (enable) {
+	printf("%s::%s%d\n", __FILE__, __func__, __LINE__);
 		tmr_start(&comp->tmr_ka, ICE_DEFAULT_Tr * 1000, timeout, comp);
 	}
 	else {
