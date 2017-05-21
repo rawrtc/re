@@ -226,7 +226,7 @@ void tmr_init(struct tmr *tmr)
 	memset(tmr, 0, sizeof(*tmr));
 
 	if (re_get_external_loop_type() == LOOP_UV) {
-		printf("uv timer_init\n");
+		//printf("uv timer_init\n");
 		uv_loop_t *uv_loop = (uv_loop_t *)re_get_external_loop();
 		struct external_handle *ext_handle = calloc(1, sizeof(*ext_handle));
 		ext_handle->type = UV_TIMER;
@@ -239,15 +239,15 @@ void tmr_init(struct tmr *tmr)
 		ext_handle->handle->data = (void *)tmr;
 		ext_handle->data = (void *)tmr;
 		list_append(handles_get(), &ext_handle->le, ext_handle);
-		printf("init timer=%p timer_handle=%p \n", (void *)tmr, (void *)ext_handle->handle);
+		//printf("init timer=%p timer_handle=%p \n", (void *)tmr, (void *)ext_handle->handle);
 	}
 }
 
 void handle_external(uv_timer_t *handle)
 {
-	printf("handle_external_timer\n");
+	//printf("handle_external_timer\n");
 	struct tmr *timer = handle->data;
-	printf("timer=%p \n", (void *)timer);
+	//printf("timer=%p \n", (void *)timer);
 	timer->th(timer->arg);
 }
 
@@ -271,23 +271,6 @@ static uv_handle_t *find_handle_for_timer(struct tmr *tmr)
 	return NULL;
 }
 
-/*void clear_handle_list()
-{
-	struct list *handles = handles_get();
-	struct le *le;
-	struct external_handle *el;
-
-	le = list_head(handles);
-	while (le != NULL) {
-		el = le->data;
-		if (el->type == UV_TIMER) {
-			free(el->data);
-			free(el->handle);
-			free(el);
-		}
-		le = le->next;
-	}
-}*/
 
 /**
  * Start a timer
@@ -300,8 +283,8 @@ static uv_handle_t *find_handle_for_timer(struct tmr *tmr)
 void tmr_start(struct tmr *tmr, uint64_t delay, tmr_h *th, void *arg)
 {
 	if (re_get_external_loop_type() == LOOP_UV) {
-	printf("start libuv timer\n");
-	printf("tmr=%p delay=%ld, arg=%p\n", (void *)tmr, delay, (void *)arg);
+	//printf("start libuv timer\n");
+	//printf("tmr=%p delay=%ld, arg=%p\n", (void *)tmr, delay, (void *)arg);
 		tmr->th  = th;
 		tmr->arg = arg;
 		tmr->jfs = delay + tmr_jiffies();
@@ -362,7 +345,7 @@ void tmr_cancel(struct tmr *tmr)
 {
 	if (re_get_external_loop_type() == LOOP_UV) {
 		uv_handle_t *timer_handle = find_handle_for_timer(tmr);
-		printf("stop libuv timer %p\n", (void *)timer_handle);
+		//printf("stop libuv timer %p\n", (void *)timer_handle);
 		uv_timer_stop((uv_timer_t *)timer_handle);
 	} else {
 		tmr_start(tmr, 0, NULL, NULL);
