@@ -459,7 +459,7 @@ static int conn_alloc(struct tls_conn **ptc, struct tls *tls,
 	tc->recvh  = recvh;
 	tc->closeh = closeh;
 	tc->arg    = arg;
-	printf("init timer tls_conn %p\n", (void *)tc);
+
 	tmr_init(&tc->tmr);
 
 	/* Connect the SSL socket */

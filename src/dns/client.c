@@ -391,6 +391,7 @@ static void tcp_estab_handler(void *arg)
 		tcpconn_close(tc, err);
 		return;
 	}
+
 	tmr_start(&tc->tmr, tc->dnsc->conf.idle_timeout,
 		  tcpconn_timeout_handler, tc);
 	tc->connected = true;
