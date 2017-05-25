@@ -102,7 +102,6 @@ static void stun_response_handler(int err, uint16_t scode, const char *reason,
 		mem_deref(uc);
 	}
 	else {
-	printf("%s::%s%d\n", __FILE__, __func__, __LINE__);
 		tmr_start(&uc->tmr_ka, sip_keepalive_wait(uc->ka_interval),
 			  udpconn_keepalive_handler, uc);
 	}
@@ -180,7 +179,6 @@ int  sip_keepalive_udp(struct sip_keepalive *ka, struct sip *sip,
 		uc->ka_interval = interval ? interval : UDP_KEEPALIVE_INTVAL;
 
 		/* learn mapped address immediately */
-		printf("%s::%s%d\n", __FILE__, __func__, __LINE__);
 		tmr_start(&uc->tmr_ka, 0, udpconn_keepalive_handler, uc);
 	}
 

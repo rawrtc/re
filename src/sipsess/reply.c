@@ -72,7 +72,6 @@ static void retransmit_handler(void *arg)
 		       &reply->msg->src, reply->mb);
 
 	reply->txc++;
-	printf("%s::%s:%d\n", __FILE__, __func__, __LINE__);
 	tmr_start(&reply->tmrg, MIN(SIP_T1<<reply->txc, SIP_T2),
 		  retransmit_handler, reply);
 }
@@ -116,7 +115,7 @@ int sipsess_reply_2xx(struct sipsess *sess, const struct sip_msg *msg,
 
 	if (err)
 		goto out;
-printf("%s::%s:%d\n", __FILE__, __func__, __LINE__);
+
 	tmr_start(&reply->tmr, 64 * SIP_T1, tmr_handler, reply);
 	tmr_start(&reply->tmrg, SIP_T1, retransmit_handler, reply);
 

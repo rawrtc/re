@@ -201,7 +201,7 @@ static void retransmit_handler(void *arg)
 	default:
 		return;
 	}
-printf("%s::%s%d\n", __FILE__, __func__, __LINE__);
+
 	tmr_start(&ct->tmre, timeout, retransmit_handler, ct);
 
 	err = sip_transp_send(&ct->qent, ct->sip, NULL, ct->tp, &ct->dst,
@@ -243,7 +243,7 @@ static void invite_response(struct sip_ctrans *ct, const struct sip_msg *msg)
 				mem_deref(ct);
 				break;
 			}
-printf("%s::%s:%d\n", __FILE__, __func__, __LINE__);
+
 			tmr_start(&ct->tmr, COMPLETE_WAIT, tmr_handler, ct);
 		}
 		break;
@@ -293,7 +293,7 @@ static bool response_handler(const struct sip_msg *msg, void *arg)
 				mem_deref(ct);
 				break;
 			}
-printf("%s::%s%d\n", __FILE__, __func__, __LINE__);
+
 			tmr_start(&ct->tmr, SIP_T4, tmr_handler, ct);
 			tmr_cancel(&ct->tmre);
 		}
@@ -339,7 +339,7 @@ int sip_ctrans_request(struct sip_ctrans **ctp, struct sip *sip,
 			      transport_handler, ct);
 	if (err)
 		goto out;
-printf("%s::%s%d\n", __FILE__, __func__, __LINE__);
+
 	tmr_start(&ct->tmr, 64 * SIP_T1, tmr_handler, ct);
 
 	if (!sip_transp_reliable(ct->tp))
@@ -370,7 +370,6 @@ int sip_ctrans_cancel(struct sip_ctrans *ct)
 	switch (ct->state) {
 
 	case PROCEEDING:
-	printf("%s::%s%d\n", __FILE__, __func__, __LINE__);
 		tmr_start(&ct->tmr, 64 * SIP_T1, tmr_handler, ct);
 		break;
 

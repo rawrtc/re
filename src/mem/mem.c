@@ -277,7 +277,7 @@ void *mem_reallocarray(void *ptr, size_t nmemb, size_t membsize,
 void *mem_ref(void *data)
 {
 	struct mem *m;
-//printf("mem_ref %p\n", data);
+
 	if (!data)
 		return NULL;
 
@@ -286,7 +286,7 @@ void *mem_ref(void *data)
 	MAGIC_CHECK(m);
 
 	++m->nrefs;
-//printf("refs now %d\n", m->nrefs);
+
 	return data;
 }
 
@@ -308,7 +308,7 @@ void *mem_deref(void *data)
 		return NULL;
 
 	m = ((struct mem *)data) - 1;
-//printf("mem_deref %p from m->nrefs=%d\n", data, m->nrefs);
+
 	MAGIC_CHECK(m);
 
 	if (--m->nrefs > 0)

@@ -34,7 +34,7 @@
 
 
 #define DEBUG_MODULE "udp"
-#define DEBUG_LEVEL 7
+#define DEBUG_LEVEL 5
 #include <re_dbg.h>
 
 
@@ -225,10 +225,8 @@ static void udp_read(struct udp_sock *us, int fd)
 
 static void udp_read_handler(int flags, void *arg)
 {
-	printf("udp_read_handler\n");
 	struct udp_sock *us = arg;
-printf("us=%p\n", (void *)us);
-printf("fd=%d\n", us->fd);
+
 	(void)flags;
 
 	udp_read(us, us->fd);
@@ -263,12 +261,11 @@ int udp_listen(struct udp_sock **usp, const struct sa *local,
 	char addr[64];
 	char serv[6] = "0";
 	int af, error, err = 0;
-printf("udp_listen\n");
+
 	if (!usp)
 		return EINVAL;
 
 	us = mem_zalloc(sizeof(*us), udp_destructor);
-	printf("new udp_socket %p\n", (void *)us);
 	if (!us)
 		return ENOMEM;
 
@@ -326,7 +323,7 @@ printf("udp_listen\n");
 			err = errno;
 			continue;
 		}
-printf("socket created: fd=%d\n", fd);
+
 		err = net_sockopt_blocking_set(fd, false);
 		if (err) {
 			DEBUG_WARNING("udp listen: nonblock set: %m\n", err);
@@ -385,13 +382,13 @@ printf("socket created: fd=%d\n", fd);
 	us->rh   = rh ? rh : dummy_udp_recv_handler;
 	us->arg  = arg;
 	us->rxsz = UDP_RXSZ_DEFAULT;
-printf("rxsz=%d\n", us->rxsz);
+
  out:
 	if (err)
 		mem_deref(us);
 	else
 		*usp = us;
-printf("udp socket pointer=%p for fd=%d\n", (void *)us, us->fd);
+
 	return err;
 }
 
@@ -693,19 +690,17 @@ int udp_sock_fd(const struct udp_sock *us, int af)
 int udp_thread_attach(struct udp_sock *us)
 {
 	int err = 0;
-printf("udp_thread_attach\n");
+
 	if (!us)
 		return EINVAL;
 
 	if (-1 != us->fd) {
-	printf("us=%p us->fd=%d call fd_listen\n", (void *)us, us->fd);
 		err = fd_listen(us->fd, FD_READ, udp_read_handler, us);
 		if (err)
 			goto out;
 	}
 
 	if (-1 != us->fd6) {
-	printf("us=%p us->fd6=%d call fd_listen\n", (void *)us, us->fd);
 		err = fd_listen(us->fd6, FD_READ, udp_read_handler6, us);
 		if (err)
 			goto out;

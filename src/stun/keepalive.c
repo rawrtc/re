@@ -67,10 +67,8 @@ static void stun_response_handler(int err, uint16_t scode, const char *reason,
 	(void)reason;
 
 	/* Restart timer */
-	if (ska->interval > 0) {
-	//printf("%s::%s:%d\n", __FILE__, __func__, __LINE__);
+	if (ska->interval > 0)
 		tmr_start(&ska->tmr, ska->interval*1000, timeout, ska);
-	}
 
 	if (err || scode) {
 		/* Clear current mapped addr to force new notification */
@@ -115,10 +113,8 @@ static void timeout(void *arg)
 		return;
 
 	/* Restart timer */
-	if (ska->interval > 0) {
-	printf("%s::%s%d\n", __FILE__, __func__, __LINE__);
+	if (ska->interval > 0)
 		tmr_start(&ska->tmr, ska->interval*1000, timeout, ska);
-	}
 
 	/* Error */
 	call_handler(ska, err, NULL);
@@ -247,8 +243,6 @@ void stun_keepalive_enable(struct stun_keepalive *ska, uint32_t interval)
 	ska->interval = interval;
 
 	tmr_cancel(&ska->tmr);
-	if (interval > 0) {
-	printf("%s::%s%d\n", __FILE__, __func__, __LINE__);
+	if (interval > 0)
 		tmr_start(&ska->tmr, 1, timeout, ska);
-	}
 }

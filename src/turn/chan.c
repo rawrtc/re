@@ -112,7 +112,6 @@ static void chanbind_resp_handler(int err, uint16_t scode, const char *reason,
 	switch (scode) {
 
 	case 0:
-	printf("%s::%s%d\n", __FILE__, __func__, __LINE__);
 		tmr_start(&chan->tmr, CHAN_REFRESH * 1000, timeout, chan);
 		if (chan->ch) {
 			chan->ch(chan->arg);

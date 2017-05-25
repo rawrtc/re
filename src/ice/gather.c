@@ -17,7 +17,7 @@
 
 
 #define DEBUG_MODULE "icegath"
-#define DEBUG_LEVEL 7
+#define DEBUG_LEVEL 5
 #include <re_dbg.h>
 
 
@@ -192,8 +192,8 @@ static int start_gathering(struct icem *icem, const struct sa *stun_srv,
 {
 	struct le *le;
 	int err = 0;
-printf("start_gathering\n");
-DEBUG_INFO("start_gathering\n");
+
+	DEBUG_INFO("start_gathering\n");
 	if (icem->ice->lmode != ICE_MODE_FULL)
 		return EINVAL;
 

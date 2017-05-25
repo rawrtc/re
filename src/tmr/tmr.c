@@ -25,7 +25,7 @@
 
 
 #define DEBUG_MODULE "tmr"
-#define DEBUG_LEVEL 7
+#define DEBUG_LEVEL 5
 #include <re_dbg.h>
 
 
@@ -87,7 +87,7 @@ static void call_handler(tmr_h *th, void *arg)
 void tmr_poll(struct list *tmrl)
 {
 	const uint64_t jfs = tmr_jiffies();
-//printf("%s\n", __func__);
+
 	for (;;) {
 		struct tmr *tmr;
 		tmr_h *th;
@@ -161,7 +161,7 @@ uint64_t tmr_next_timeout(struct list *tmrl)
 {
 	const uint64_t jif = tmr_jiffies();
 	const struct tmr *tmr;
-//printf("%s\n", __func__);
+
 	tmr = list_ledata(tmrl->head);
 	if (!tmr)
 		return 0;
@@ -239,15 +239,13 @@ void tmr_init(struct tmr *tmr)
 		ext_handle->handle->data = (void *)tmr;
 		ext_handle->data = (void *)tmr;
 		list_append(handles_get(), &ext_handle->le, ext_handle);
-		//printf("init timer=%p timer_handle=%p \n", (void *)tmr, (void *)ext_handle->handle);
 	}
 }
 
 void handle_external(uv_timer_t *handle)
 {
-	//printf("handle_external_timer\n");
 	struct tmr *timer = handle->data;
-	//printf("timer=%p \n", (void *)timer);
+
 	timer->th(timer->arg);
 }
 
@@ -283,8 +281,6 @@ static uv_handle_t *find_handle_for_timer(struct tmr *tmr)
 void tmr_start(struct tmr *tmr, uint64_t delay, tmr_h *th, void *arg)
 {
 	if (re_get_external_loop_type() == LOOP_UV) {
-	//printf("start libuv timer\n");
-	//printf("tmr=%p delay=%ld, arg=%p\n", (void *)tmr, delay, (void *)arg);
 		tmr->th  = th;
 		tmr->arg = arg;
 		tmr->jfs = delay + tmr_jiffies();

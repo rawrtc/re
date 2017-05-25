@@ -60,7 +60,7 @@ static int send_handler(enum sip_transp tp, const struct sa *src,
 	ack->mb = mem_ref(mb);
 	ack->dst = *dst;
 	ack->tp  = tp;
-printf("%s::%s:%d\n", __FILE__, __func__, __LINE__);
+
 	tmr_start(&ack->tmr, 64 * SIP_T1, tmr_handler, ack);
 
 	return 0;

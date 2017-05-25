@@ -507,7 +507,6 @@ static void timeout(void *arg)
 
 static void schedule(struct rtcp_sess *sess)
 {
-printf("%s::%s%d\n", __FILE__, __func__, __LINE__);
 	tmr_start(&sess->tmr, RTCP_INTERVAL, timeout, sess);
 }
 

@@ -138,7 +138,6 @@ static void tmr_handler(void *arg)
 
 void sipsub_reschedule(struct sipsub *sub, uint64_t wait)
 {
-printf("%s::%s:%d\n", __FILE__, __func__, __LINE__);
 	tmr_start(&sub->tmr, wait, tmr_handler, sub);
 }
 
@@ -213,7 +212,7 @@ static void response_handler(int err, const struct sip_msg *msg, void *arg)
 		sub->failc = 0;
 
 		if (!sub->expires && !sub->termconf) {
-printf("%s::%s:%d\n", __FILE__, __func__, __LINE__);
+
 			tmr_start(&sub->tmr, NOTIFY_TIMEOUT,
 				  notify_timeout_handler, sub);
 			sub->termwait = true;
@@ -655,7 +654,6 @@ int sipevent_fork(struct sipsub **subp, struct sipsub *osub,
 	sub->arg     = arg;
 
 	if (!sub->expires) {
-	printf("%s::%s:%d\n", __FILE__, __func__, __LINE__);
 		tmr_start(&sub->tmr, NOTIFY_TIMEOUT,
 			  notify_timeout_handler, sub);
 		sub->termwait = true;

@@ -17,7 +17,7 @@
 
 
 #define DEBUG_MODULE "connchk"
-#define DEBUG_LEVEL 7
+#define DEBUG_LEVEL 5
 #include <re_dbg.h>
 
 
@@ -405,7 +405,6 @@ int icem_conncheck_start(struct icem *icem)
 		    list_count(&icem->checkl));
 
 	/* add some delay, to wait for call to be 'established' */
-	printf("%s::%s%d\n", __FILE__, __func__, __LINE__);
 	tmr_start(&icem->tmr_pace, 10, pace_timeout, icem);
 
 	return 0;
@@ -414,10 +413,8 @@ int icem_conncheck_start(struct icem *icem)
 
 void icem_conncheck_continue(struct icem *icem)
 {
-	if (!tmr_isrunning(&icem->tmr_pace)) {
-	printf("%s::%s%d\n", __FILE__, __func__, __LINE__);
+	if (!tmr_isrunning(&icem->tmr_pace))
 		tmr_start(&icem->tmr_pace, 1, pace_timeout, icem);
-	}
 }
 
 

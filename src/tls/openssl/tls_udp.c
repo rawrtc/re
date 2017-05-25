@@ -249,7 +249,7 @@ static void check_timer(struct tls_conn *tc)
 	struct timeval tv = {0, 0};
 
 	if (1 == DTLSv1_get_timeout(tc->ssl, &tv)) {
-printf("%s::%s%d\n", __FILE__, __func__, __LINE__);
+
 		tmr_start(&tc->tmr, tv.tv_sec * 1000 + tv.tv_usec / 1000,
 			  timeout, tc);
 	}

@@ -123,7 +123,6 @@ static void conn_destructor(void *arg)
 
 static void conn_idle(struct conn *conn)
 {
-printf("%s::%s:%d\n", __FILE__, __func__, __LINE__);
 	tmr_start(&conn->tmr, IDLE_TIMEOUT, timeout_handler, conn);
 	conn->req = NULL;
 }
@@ -231,7 +230,7 @@ static void estab_handler(void *arg)
 		try_next(conn, err);
 		return;
 	}
-printf("%s::%s:%d\n", __FILE__, __func__, __LINE__);
+
 	tmr_start(&conn->tmr, RECV_TIMEOUT, timeout_handler, conn);
 }
 
@@ -403,7 +402,7 @@ static int conn_connect(struct http_req *req)
 			goto out;
 	}
 #endif
-printf("%s::%s:%d\n", __FILE__, __func__, __LINE__);
+
 	tmr_start(&conn->tmr, CONN_TIMEOUT, timeout_handler, conn);
 
 	req->conn = conn;

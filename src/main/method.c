@@ -49,6 +49,7 @@ enum poll_method poll_method_best(void)
 		m = METHOD_SELECT;
 	}
 #endif
+
 	return m;
 }
 

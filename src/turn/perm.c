@@ -87,7 +87,6 @@ static void createperm_resp_handler(int err, uint16_t scode,
 	switch (scode) {
 
 	case 0:
-	printf("%s::%s%d\n", __FILE__, __func__, __LINE__);
 		tmr_start(&perm->tmr, PERM_REFRESH * 1000, timeout, perm);
 		if (perm->ph) {
 			perm->ph(perm->arg);

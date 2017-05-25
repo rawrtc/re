@@ -93,7 +93,6 @@ struct re {
 		int flags;           /**< Polling flags (Read, Write, etc.) */
 		fd_h *fh;            /**< Event handler                     */
 		void *arg;           /**< Handler argument                  */
-		//uv_poll_t *external_handle; /** < Handle of external event loop  */
 	} *fhs;
 	int maxfds;                  /**< Maximum number of polling fds     */
 	int nfds;                    /**< Number of active file descriptors */
@@ -189,7 +188,6 @@ static pthread_key_t  pt_key;
 static void thread_destructor(void *arg)
 {
 	poll_close(arg);
-	printf("free %p\n", (void *)arg);
 	free(arg);
 }
 
@@ -523,6 +521,7 @@ static int poll_init(struct re *re)
 static void poll_close(struct re *re)
 {
 	DEBUG_INFO("poll close\n");
+
 	re->fhs = mem_deref(re->fhs);
 	re->maxfds = 0;
 
@@ -558,7 +557,6 @@ static void poll_close(struct re *re)
 #endif
 
 #ifdef HAVE_KQUEUE
-DEBUG_INFO("poll_close: epfd=%d\n", re->kqfd);
 	if (re->kqfd >= 0) {
 		close(re->kqfd);
 		re->kqfd = -1;
@@ -575,17 +573,13 @@ static int poll_setup(struct re *re)
 	int err;
 
 	err = fd_setsize(DEFAULT_MAXFDS);
-	if (err) {
-	printf("err fd_setsize\n");
+	if (err)
 		goto out;
-	}
 
 	if (METHOD_NULL == re->method) {
 		err = poll_method_set(poll_method_best());
-		if (err) {
-		printf("err poll_method\n");
+		if (err)
 			goto out;
-		}
 
 		DEBUG_INFO("poll setup: poll method not set - set to `%s'\n",
 			   poll_method_name(re->method));
@@ -594,10 +588,8 @@ static int poll_setup(struct re *re)
 	err = poll_init(re);
 
  out:
-	if (err) {
-	printf("err close poll\n");
+	if (err)
 		poll_close(re);
-	}
 	return err;
 }
 
@@ -624,18 +616,11 @@ static int find_fd_for_handle(uv_handle_t *handle)
 
 static void uv_socket_readable(uv_poll_t *handle, int status, int events)
 {
-	printf("uv_socket_readable\n");
 	struct re *re = re_get();
 
-	printf("got re, handle=%p \n", (void *)handle);
 	int fd = find_fd_for_handle((uv_handle_t *)handle);
-	printf("fd=%d\n", fd);
-printf("arg=%p\n", (void *)re->fhs[fd].arg);
-printf("events=%d status=%d\n", events, status);
-	if (status < 0) {
-		printf("error: %s\n", uv_strerror(status));
-	} else if (events > 0) {
-		printf("re->fhs=%p\n", (void *)re->fhs);
+
+	if (events > 0) {
 		if (events & UV_READABLE) {
 			(re->fhs[fd].fh)((int)(re->fhs[fd].flags), (void *)(re->fhs[fd].arg));
 		}
@@ -656,9 +641,7 @@ static int set_uv_socket(int fd, int flags, fd_h *fh, void *arg)
 {
 	struct re *re = re_get();
 	int err = 0;
-	//re->fhs[fd].external_handle = calloc(1, sizeof(uv_poll_t));;
 
-printf("set_uv_socket for fd=%d arg=%p\n", fd, (void *)arg);
 	struct external_handle *ext_handle = calloc(1, sizeof(*ext_handle));
 	ext_handle->type = UV_UDP;
 	uv_poll_t *udp_handle = calloc(1, sizeof(uv_poll_t));
@@ -680,10 +663,6 @@ printf("set_uv_socket for fd=%d arg=%p\n", fd, (void *)arg);
 	ext_handle->handle->data = (void *)&re->fhs[fd];
 	ext_handle->data = (void *)filed;
 	list_append(handles_get(), &ext_handle->le, ext_handle);
-
-	printf("uv_handle=%p\n", (void *)udp_handle);
-	printf("arg=%p\n", (void *)re->fhs[fd].arg);
-	printf("fd=%d\n", *(int *)ext_handle->data);
 
 	if ((err = uv_poll_start((uv_poll_t *)ext_handle->handle, UV_READABLE, uv_socket_readable)) < 0) {
 		DEBUG_INFO("Can't start receiving readable events (%s)\n", uv_strerror(err));
@@ -727,7 +706,7 @@ int fd_listen(int fd, int flags, fd_h *fh, void *arg)
 	struct re *re = re_get();
 	int err = 0;
 
-	DEBUG_INFO("fd_listen: fd=%d flags=0x%02x maxfds=%d arg=%p\n", fd, flags, re->maxfds, (void *)arg);
+	DEBUG_INFO("fd_listen: fd=%d flags=0x%02x\n", fd, flags);
 
 	if (re->external_loop_type == LOOP_UV) {
 		if (flags || fh) {
@@ -739,10 +718,6 @@ int fd_listen(int fd, int flags, fd_h *fh, void *arg)
 			uv_handle_t *handle = find_handle_for_udp(fd);
 			printf("Stop poll handle %p handle->data=%d\n", (void *)handle, *(int *)(handle->data));
 			uv_poll_stop((uv_poll_t *)handle);
-		/*	uv_poll_stop(re->fhs[fd].external_handle);
-			free(re->fhs[fd].external_handle->data);
-			re->fhs[fd].external_handle->data = NULL;
-			re->fhs[fd].external_handle = NULL;*/
 		}
 		return err;
 	}
@@ -794,7 +769,6 @@ int fd_listen(int fd, int flags, fd_h *fh, void *arg)
 
 #ifdef HAVE_KQUEUE
 	case METHOD_KQUEUE:
-	printf("set_kqueue_fds\n");
 		err = set_kqueue_fds(re, fd, flags);
 		break;
 #endif
@@ -804,7 +778,6 @@ int fd_listen(int fd, int flags, fd_h *fh, void *arg)
 	}
 
 	if (err) {
-	printf("err=%d\n", err);
 		if (flags && fh) {
 			fd_close(fd);
 			DEBUG_WARNING("fd_listen: fd=%d flags=0x%02x (%m)\n",
@@ -823,7 +796,6 @@ int fd_listen(int fd, int flags, fd_h *fh, void *arg)
  */
 void fd_close(int fd)
 {
-printf("call fd_close for fd %d\n", fd);
 	(void)fd_listen(fd, 0, NULL, NULL);
 }
 
@@ -1056,7 +1028,6 @@ int fd_setsize(int maxfds)
 
 	if (!maxfds) {
 		fd_debug();
-		printf("fd_setsize with maxfds=0\n");
 		poll_close(re);
 		return 0;
 	}
@@ -1339,7 +1310,6 @@ void re_thread_close(void)
 	re = pthread_getspecific(pt_key);
 	if (re) {
 		poll_close(re);
-		printf("free re \n");
 		free(re);
 		pthread_setspecific(pt_key, NULL);
 	}
@@ -1412,7 +1382,6 @@ struct list *handles_get(void)
 
 void init_external_handles(void)
 {
-printf("init_external_handles\n");
 	list_init(&(re_get()->external_handles));
 }
 
@@ -1436,7 +1405,6 @@ int alloc_fds(int maxfds)
 		if (!re->fhs)
 			return ENOMEM;
 	}
-	printf("re->fds=%p\n", (void *)re->fhs);
 	return 0;
 }
 

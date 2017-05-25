@@ -85,7 +85,7 @@ static void refresh_timer(struct turnc *turnc)
 	const uint32_t t = turnc->lifetime*1000*3/4;
 
 	DEBUG_INFO("Start refresh timer.. %u seconds\n", t/1000);
-printf("%s::%s%d\n", __FILE__, __func__, __LINE__);
+
 	tmr_start(&turnc->tmr, t, timeout, turnc);
 }
 
