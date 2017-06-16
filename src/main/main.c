@@ -177,11 +177,7 @@ void external_loop_set(enum external_loop loop, uv_loop_t *arg)
 
 static void poll_close(struct re *re);
 
-#ifdef SOLARIS
-static pthread_once_t pt_once = {PTHREAD_ONCE_INIT};
-#else
 static pthread_once_t pt_once = PTHREAD_ONCE_INIT;
-#endif
 static pthread_key_t  pt_key;
 
 
