@@ -511,8 +511,8 @@ CFLAGS  += -DHAVE_LIBUV
 LIBS    += -luv
 endif
 
-CFLAGS  += -DHAVE_LIBUV
-LIBS    += -luv
+#CFLAGS  += -DHAVE_LIBUV
+#LIBS    += -luv
 
 ifneq ($(OS),win32)
 
@@ -706,6 +706,7 @@ info:
 	@echo "  USE_DTLS:      $(USE_DTLS)"
 	@echo "  USE_DTLS_SRTP: $(USE_DTLS_SRTP)"
 	@echo "  USE_ZLIB:      $(USE_ZLIB)"
+	@echo "  USE_LIBUV:     $(USE_LIBUV)"
 	@echo "  GCOV:          $(GCOV)"
 	@echo "  GPROF:         $(GPROF)"
 	@echo "  CROSS_COMPILE: $(CROSS_COMPILE)"
