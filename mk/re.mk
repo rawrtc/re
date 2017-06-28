@@ -522,7 +522,8 @@ HAVE_PTHREAD_RWLOCK := 1
 CFLAGS  += -DHAVE_PTHREAD
 HAVE_LIBPTHREAD := 1
 ifneq ($(HAVE_LIBPTHREAD),)
-LIBS	+= -lpthread
+CFLAGS += -pthread
+#LIBS	+= -lpthread
 endif
 endif
 
