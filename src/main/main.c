@@ -528,7 +528,6 @@ static void poll_close(struct re *re)
 		while (le != NULL) {
 			el = le->data;
 			if (el->type == UV_UDP) {
-			printf("stop handle %p\n", (void *)el->handle);
 				uv_poll_stop((uv_poll_t *)el->handle);
 			}
 			le = le->next;

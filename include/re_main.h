@@ -4,9 +4,9 @@
  * Copyright (C) 2010 Creytiv.com
  */
 // #include <uv.h>
-#include "/usr/local/include/uv.h"
- #include "re_tmr.h"
- #include "re_list.h"
+#include <uv.h>
+#include "re_tmr.h"
+#include "re_list.h"
 
 enum {
 #ifndef FD_READ
