@@ -767,9 +767,11 @@ static bool recv_handler(struct sa *src, struct mbuf *mb, void *arg)
  * @param sock DTLS socket
  * @param src  Source address
  * @param mb   Buffer to receive
+ *
+ * @return whether the packet has been handled.
  */
-void dtls_receive(struct dtls_sock *sock, struct sa *src, struct mbuf *mb) {
-	recv_handler(src, mb, sock);
+bool dtls_receive(struct dtls_sock *sock, struct sa *src, struct mbuf *mb) {
+	return recv_handler(src, mb, sock);
 }
 
 
