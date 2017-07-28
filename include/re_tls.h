@@ -92,7 +92,7 @@ int dtls_accept(struct tls_conn **ptc, struct tls *tls,
 		dtls_estab_h *estabh, dtls_recv_h *recvh,
 		dtls_close_h *closeh, void *arg);
 int dtls_send(struct tls_conn *tc, struct mbuf *mb);
-void dtls_receive(struct dtls_sock *sock, struct sa *src, struct mbuf *mb);
+bool dtls_receive(struct dtls_sock *sock, struct sa *src, struct mbuf *mb);
 void dtls_set_handlers(struct tls_conn *tc, dtls_estab_h *estabh,
 		       dtls_recv_h *recvh, dtls_close_h *closeh, void *arg);
 const struct sa *dtls_peer(const struct tls_conn *tc);
