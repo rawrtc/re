@@ -40,6 +40,8 @@ struct dtls_sock {
 	struct hash *ht;
 	struct mbuf *mb;
 	dtls_conn_h *connh;
+	dtls_send_h *sendh;
+	dtls_mtu_h *mtuh;
 	void *arg;
 	size_t mtu;
 	size_t headroom;
@@ -121,7 +123,7 @@ static int bio_write(BIO *b, const char *buf, int len)
 	(void)mbuf_write_mem(mb, (void *)buf, len);
 	mb->pos = tc->sock->headroom;
 
-	err = udp_send_helper(tc->sock->us, &tc->peer, mb, tc->sock->uh);
+	err = tc->sock->sendh(tc, &tc->peer, mb, tc->arg);
 
 	mem_deref(mb);
 
@@ -147,7 +149,17 @@ static long bio_ctrl(BIO *b, int cmd, long num, void *ptr)
 
 #if defined (BIO_CTRL_DGRAM_QUERY_MTU)
 	case BIO_CTRL_DGRAM_QUERY_MTU:
-		return tc ? tc->sock->mtu : MTU_DEFAULT;
+		if (tc) {
+			if (tc->sock->mtuh) {
+				return tc->sock->mtuh(tc, tc->arg);
+			}
+			else {
+				return tc->sock->mtu;
+			}
+		}
+		else {
+			return MTU_DEFAULT;
+		}
 #endif
 
 #if defined (BIO_CTRL_DGRAM_GET_FALLBACK_MTU)
@@ -751,6 +763,13 @@ static struct tls_conn *conn_lookup(struct dtls_sock *sock,
 }
 
 
+static int send_handler(struct tls_conn *tc, const struct sa *dst,
+		struct mbuf *mb, void *arg) {
+	(void)arg;
+	return udp_send_helper(tc->sock->us, dst, mb, tc->sock->uh);
+}
+
+
 static bool recv_handler(struct sa *src, struct mbuf *mb, void *arg)
 {
 	struct dtls_sock *sock = arg;
@@ -780,6 +799,20 @@ static bool recv_handler(struct sa *src, struct mbuf *mb, void *arg)
 	}
 
 	return true;
+}
+
+
+/**
+ * Feed data to a DTLS socket
+ *
+ * @param sock DTLS socket
+ * @param src  Source address
+ * @param mb   Buffer to receive
+ *
+ * @return whether the packet has been handled.
+ */
+bool dtls_receive(struct dtls_sock *sock, struct sa *src, struct mbuf *mb) {
+	return recv_handler(src, mb, sock);
 }
 
 
@@ -831,7 +864,55 @@ int dtls_listen(struct dtls_sock **sockp, const struct sa *laddr,
 	sock->mtu      = MTU_DEFAULT;
 	sock->headroom = HEADROOM_DEFAULT;
 	sock->connh    = connh;
+	sock->sendh    = send_handler;
 	sock->arg      = arg;
+
+ out:
+	if (err)
+		mem_deref(sock);
+	else
+		*sockp = sock;
+
+	return err;
+}
+
+
+/**
+ * Create a DTLS Socket without using an UDP socket underneath
+ *
+ * @param sockp  Pointer to returned DTLS Socket
+ * @param htsize Connection hash table size. Set to 0 if one DTLS session shall
+ * be used for all peers.
+ * @param connh  Connect handler
+ * @param sendh  Send handler
+ * @param mtuh   MTU handler
+ * @param arg    Handler argument
+ *
+ * @return 0 if success, otherwise errorcode
+ */
+int dtls_socketless(struct dtls_sock **sockp, uint32_t htsize,
+		dtls_conn_h *connh, dtls_send_h *sendh, dtls_mtu_h *mtuh,
+		void *arg)
+{
+	struct dtls_sock *sock;
+	int err;
+
+	if (!sockp || !sendh)
+		return EINVAL;
+
+	sock = mem_zalloc(sizeof(*sock), sock_destructor);
+	if (!sock)
+		return ENOMEM;
+
+	err = hash_alloc(&sock->ht, hash_valid_size(htsize));
+	if (err)
+		goto out;
+
+	sock->mtu   = MTU_DEFAULT;
+	sock->connh = connh;
+	sock->sendh = sendh;
+	sock->mtuh  = mtuh;
+	sock->arg   = arg;
 
  out:
 	if (err)
