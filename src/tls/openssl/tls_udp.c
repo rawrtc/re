@@ -27,9 +27,8 @@
 
 
 enum {
-	MTU_DEFAULT      = 1400,
-	MTU_FALLBACK     = 548,
-	HEADROOM_DEFAULT = 4,
+	MTU_DEFAULT  = 1400,
+	MTU_FALLBACK = 548,
 };
 
 
@@ -40,17 +39,17 @@ struct dtls_sock {
 	struct hash *ht;
 	struct mbuf *mb;
 	dtls_conn_h *connh;
-	dtls_send_h *sendh;
-	dtls_mtu_h *mtuh;
 	void *arg;
 	size_t mtu;
-	size_t headroom;
 };
 
 
 /* NOTE: shadow struct defined in tls_*.c */
 struct tls_conn {
 	SSL *ssl;             /* inheritance */
+#ifdef TLS_BIO_OPAQUE
+	BIO_METHOD *biomet;
+#endif
 	BIO *sbio_out;
 	BIO *sbio_in;
 	struct tmr tmr;
@@ -110,17 +109,18 @@ static int bio_write(BIO *b, const char *buf, int len)
 	struct tls_conn *tc = b->ptr;
 #endif
 	struct mbuf *mb;
+	enum {SPACE = 4};
 	int err;
 
-	mb = mbuf_alloc(tc->sock->headroom + len);
+	mb = mbuf_alloc(SPACE + len);
 	if (!mb)
 		return -1;
 
-	mb->pos = tc->sock->headroom;
+	mb->pos = SPACE;
 	(void)mbuf_write_mem(mb, (void *)buf, len);
-	mb->pos = tc->sock->headroom;
+	mb->pos = SPACE;
 
-	err = tc->sock->sendh(tc, &tc->peer, mb, tc->arg);
+	err = udp_send_helper(tc->sock->us, &tc->peer, mb, tc->sock->uh);
 
 	mem_deref(mb);
 
@@ -146,17 +146,7 @@ static long bio_ctrl(BIO *b, int cmd, long num, void *ptr)
 
 #if defined (BIO_CTRL_DGRAM_QUERY_MTU)
 	case BIO_CTRL_DGRAM_QUERY_MTU:
-		if (tc) {
-			if (tc->sock->mtuh) {
-				return tc->sock->mtuh(tc, tc->arg);
-			}
-			else {
-				return tc->sock->mtu;
-			}
-		}
-		else {
-			return MTU_DEFAULT;
-		}
+		return tc ? tc->sock->mtu : MTU_DEFAULT;
 #endif
 
 #if defined (BIO_CTRL_DGRAM_GET_FALLBACK_MTU)
@@ -169,7 +159,29 @@ static long bio_ctrl(BIO *b, int cmd, long num, void *ptr)
 }
 
 
-#ifndef TLS_BIO_OPAQUE
+#ifdef TLS_BIO_OPAQUE
+
+static BIO_METHOD *bio_method_udp(void)
+{
+	BIO_METHOD *method;
+
+	method = BIO_meth_new(BIO_TYPE_SOURCE_SINK, "udp_send");
+	if (!method) {
+		DEBUG_WARNING("alloc: BIO_meth_new() failed\n");
+		ERR_clear_error();
+		return NULL;
+	}
+
+	BIO_meth_set_write(method, bio_write);
+	BIO_meth_set_ctrl(method, bio_ctrl);
+	BIO_meth_set_create(method, bio_create);
+	BIO_meth_set_destroy(method, bio_destroy);
+
+	return method;
+}
+
+#else
+
 static struct bio_method_st bio_udp_send = {
 	BIO_TYPE_SOURCE_SINK,
 	"udp_send",
@@ -182,6 +194,7 @@ static struct bio_method_st bio_udp_send = {
 	bio_destroy,
 	0
 };
+
 #endif
 
 
@@ -208,6 +221,12 @@ static void conn_destructor(void *arg)
 	hash_unlink(&tc->he);
 	tmr_cancel(&tc->tmr);
 	tls_close(tc);
+
+#ifdef TLS_BIO_OPAQUE
+	if (tc->biomet)
+		BIO_meth_free(tc->biomet);
+#endif
+
 	mem_deref(tc->sock);
 }
 
@@ -461,6 +480,14 @@ static int conn_alloc(struct tls_conn **ptc, struct tls *tls,
 	tc->closeh = closeh;
 	tc->arg    = arg;
 
+#ifdef TLS_BIO_OPAQUE
+	tc->biomet = bio_method_udp();
+	if (!tc->biomet) {
+		err = ENOMEM;
+		goto out;
+	}
+#endif
+
 	/* Connect the SSL socket */
 	tc->ssl = SSL_new(tls->ctx);
 	if (!tc->ssl) {
@@ -479,7 +506,7 @@ static int conn_alloc(struct tls_conn **ptc, struct tls *tls,
 	}
 
 #ifdef TLS_BIO_OPAQUE
-	tc->sbio_out = BIO_new(tls->method_udp);
+	tc->sbio_out = BIO_new(tc->biomet);
 #else
 	tc->sbio_out = BIO_new(&bio_udp_send);
 #endif
@@ -723,13 +750,6 @@ static struct tls_conn *conn_lookup(struct dtls_sock *sock,
 }
 
 
-static int send_handler(struct tls_conn *tc, const struct sa *dst,
-		struct mbuf *mb, void *arg) {
-	(void)arg;
-	return udp_send_helper(tc->sock->us, dst, mb, tc->sock->uh);
-}
-
-
 static bool recv_handler(struct sa *src, struct mbuf *mb, void *arg)
 {
 	struct dtls_sock *sock = arg;
@@ -759,20 +779,6 @@ static bool recv_handler(struct sa *src, struct mbuf *mb, void *arg)
 	}
 
 	return true;
-}
-
-
-/**
- * Feed data to a DTLS socket
- *
- * @param sock DTLS socket
- * @param src  Source address
- * @param mb   Buffer to receive
- *
- * @return whether the packet has been handled.
- */
-bool dtls_receive(struct dtls_sock *sock, struct sa *src, struct mbuf *mb) {
-	return recv_handler(src, mb, sock);
 }
 
 
@@ -821,59 +827,9 @@ int dtls_listen(struct dtls_sock **sockp, const struct sa *laddr,
 	if (err)
 		goto out;
 
-	sock->mtu      = MTU_DEFAULT;
-	sock->headroom = HEADROOM_DEFAULT;
-	sock->connh    = connh;
-	sock->sendh    = send_handler;
-	sock->arg      = arg;
-
- out:
-	if (err)
-		mem_deref(sock);
-	else
-		*sockp = sock;
-
-	return err;
-}
-
-
-/**
- * Create a DTLS Socket without using an UDP socket underneath
- *
- * @param sockp  Pointer to returned DTLS Socket
- * @param htsize Connection hash table size. Set to 0 if one DTLS session shall
- * be used for all peers.
- * @param connh  Connect handler
- * @param sendh  Send handler
- * @param mtuh   MTU handler
- * @param arg    Handler argument
- *
- * @return 0 if success, otherwise errorcode
- */
-int dtls_socketless(struct dtls_sock **sockp, uint32_t htsize,
-		dtls_conn_h *connh, dtls_send_h *sendh, dtls_mtu_h *mtuh,
-		void *arg)
-{
-	struct dtls_sock *sock;
-	int err;
-
-	if (!sockp || !sendh)
-		return EINVAL;
-
-	sock = mem_zalloc(sizeof(*sock), sock_destructor);
-	if (!sock)
-		return ENOMEM;
-
-	err = hash_alloc(&sock->ht, hash_valid_size(htsize));
-	if (err)
-		goto out;
-
-	sock->mtu      = MTU_DEFAULT;
-	sock->headroom = HEADROOM_DEFAULT;
-	sock->connh    = connh;
-	sock->sendh    = sendh;
-	sock->mtuh     = mtuh;
-	sock->arg      = arg;
+	sock->mtu   = MTU_DEFAULT;
+	sock->connh = connh;
+	sock->arg   = arg;
 
  out:
 	if (err)
@@ -913,51 +869,15 @@ void dtls_set_mtu(struct dtls_sock *sock, size_t mtu)
 }
 
 
-/*
- * Get headroom of a DTLS Socket
- *
- * @param sock DTLS Socket
- *
- * @return Headroom value.
- */
-size_t dtls_headroom(struct dtls_sock *sock)
+void dtls_recv_packet(struct dtls_sock *sock, const struct sa *src,
+		      struct mbuf *mb)
 {
-	return sock ? sock->headroom : 0;
-}
+	struct sa addr;
 
-
-/**
- * Set headroom on a DTLS Socket
- *
- * @param sock     DTLS Socket
- * @param headroom Headroom value
- */
-void dtls_set_headroom(struct dtls_sock *sock, size_t headroom)
-{
-	if (!sock)
+	if (!sock || !src || !mb)
 		return;
 
-	sock->headroom = headroom;
+	addr = *src;
+
+	recv_handler(&addr, mb, sock);
 }
-
-
-#ifdef TLS_BIO_OPAQUE
-BIO_METHOD *tls_method_udp(void)
-{
-	BIO_METHOD *method;
-
-	method = BIO_meth_new(BIO_TYPE_SOURCE_SINK, "udp_send");
-	if (!method) {
-		DEBUG_WARNING("alloc: BIO_meth_new() failed\n");
-		ERR_clear_error();
-		return NULL;
-	}
-
-	BIO_meth_set_write(method, bio_write);
-	BIO_meth_set_ctrl(method, bio_ctrl);
-	BIO_meth_set_create(method, bio_create);
-	BIO_meth_set_destroy(method, bio_destroy);
-
-	return method;
-}
-#endif
