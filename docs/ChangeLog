@@ -1,3 +1,44 @@
+2018-09-01 Alfred E. Heggestad <alfred.heggestad@gmail.com>
+
+	* Version 0.5.9
+
+	* Project URL: https://github.com/creytiv/re
+
+	* build: Added support for 64-bit MINGW (#131)
+		 (thanks Alexander Ushakov)
+
+		 fixed inline issue when compiling VS as C++ (#143)
+		 (thanks TheSil)
+
+	* jbuf: zero out jbuf_stat on jbuf flush (#147)
+		(thanks Christian Spielberger)
+
+	* net: remove net_conn api (old and unused) (#145)
+	       fix bug in net_if_getname (#144)
+
+	* sip: get local TCP address in establish handler (#146)
+
+	* tls: add AES-GCM to DTLS-SRTP (#141)
+
+
+2018-04-20 Alfred E. Heggestad <alfred.heggestad@gmail.com>
+
+	* Version 0.5.8
+
+	* Project URL: https://github.com/creytiv/re
+
+	* build: update win32 files (thanks Encamy)
+
+	* aes: add support for AES-GCM (Galois Counter Mode)
+
+	* fmt: json/utf8: fix unescaping of unicode code points (#127)
+	       add utf8_byteseq
+
+	* mqueue: set non-blocking mode for read/write file descriptors (#122)
+
+	* srtp: add support for AES-GCM cipher suite (RFC 7714)
+
+
 2018-01-12 Alfred E. Heggestad <alfred.heggestad@gmail.com>
 
 	* Version 0.5.7

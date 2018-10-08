@@ -67,7 +67,7 @@ the main [website](http://creytiv.com/doxygen/re-dox/html/)
 ### Examples
 
 Coding examples are available from the
-[redemo](http://creytiv.com/pub/redemo-0.4.1.tar.gz) project
+[redemo](http://creytiv.com/pub/redemo-0.5.0.tar.gz) project
 
 
 ## License
@@ -198,6 +198,7 @@ legend:
 * [RFC 6455](https://tools.ietf.org/html/rfc6455) - The WebSocket Protocol
 * [RFC 7159](https://tools.ietf.org/html/rfc7159) - JavaScript Object Notation (JSON)
 * [RFC 7350](https://tools.ietf.org/html/rfc7350) - DTLS as Transport for STUN
+* [RFC 7714](https://tools.ietf.org/html/rfc7714) - AES-GCM Authenticated Encryption in SRTP
 
 
 ## Supported platforms
@@ -209,7 +210,7 @@ legend:
 * Solaris 11
 * Windows
 * Apple Mac OS X and iOS
-* Android
+* Android (5.0 or later)
 
 ### Supported versions of C Standard library
 
