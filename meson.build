@@ -1,7 +1,8 @@
 # Project definition
 project('re', 'c',
     version: '0.5.9',
-    default_options: ['c_std=c99'])
+    default_options: ['c_std=c99'],
+    meson_version: '>=0.45.0')
 
 # Set compiler warning flags
 compiler = meson.get_compiler('c')
