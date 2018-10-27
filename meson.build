@@ -245,7 +245,15 @@ else
     endif
 
     # Check for resolv
-    if compiler.has_header('resolv.h')
+    resolv_prefix = '''
+    #define _BSD_SOURCE 1
+    #define _DEFAULT_SOURCE 1
+    #include <sys/types.h>
+    #include <netinet/in.h>
+    #include <arpa/nameser.h>
+    #include <resolv.h>
+    '''
+    if compiler.has_type('struct __res_state', prefix: resolv_prefix)
         # OSX/iOS and Solaris require linking
         if system == 'darwin' or system == 'sunos'
             dependencies += compiler.find_library('resolv', required: true)
