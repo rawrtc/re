@@ -222,7 +222,13 @@ else
     endif
 
     # Check for ifaddrs
-    if compiler.has_header('ifaddrs.h')
+    ifaddrs_prefix = '''
+    #include <sys/socket.h>
+    #define __USE_MISC 1   /**< Use MISC code */
+    #include <net/if.h>
+    #include <ifaddrs.h>
+    '''
+    if compiler.has_function('getifaddrs', prefix: ifaddrs_prefix)
         add_project_arguments('-DHAVE_GETIFADDRS', language: 'c')
         configuration.set('HAVE_GETIFADDRS', 1)
     endif
