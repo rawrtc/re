@@ -175,9 +175,9 @@ if system == 'windows'
     configuration.set('__ssize_t_defined', 1)
 
     # Additional linking
-    dependencies += compiler.find_library('lwsock32', required: true)
-    dependencies += compiler.find_library('lws2_32', required: true)
-    dependencies += compiler.find_library('liphlpapi', required: true)
+    dependencies += compiler.find_library('wsock32', required: true)
+    dependencies += compiler.find_library('ws2_32', required: true)
+    dependencies += compiler.find_library('iphlpapi', required: true)
 
     # TODO: APP_LFLAGS	+= -Wl,--export-all-symbols
 else
