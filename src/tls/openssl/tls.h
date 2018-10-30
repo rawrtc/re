@@ -19,7 +19,8 @@
 
 
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L && \
-	!defined(LIBRESSL_VERSION_NUMBER)
+	!defined(LIBRESSL_VERSION_NUMBER) && \
+	!defined(OPENSSL_IS_BORINGSSL)
 #define SSL_state SSL_get_state
 #define SSL_ST_OK TLS_ST_OK
 #endif
