@@ -34,6 +34,9 @@
 #undef LIST_INIT
 #undef LIST_FOREACH
 #endif
+#ifdef HAVE_LIBUV
+#include <uv.h>
+#endif
 #include <re_types.h>
 #include <re_fmt.h>
 #include <re_mem.h>
@@ -91,6 +94,9 @@ struct re {
 		int flags;           /**< Polling flags (Read, Write, etc.) */
 		fd_h *fh;            /**< Event handler                     */
 		void *arg;           /**< Handler argument                  */
+#ifdef HAVE_LIBUV
+        uv_poll_t uv_poll;   /**< libuv handler                     */
+#endif
 	} *fhs;
 	int maxfds;                  /**< Maximum number of polling fds     */
 	int nfds;                    /**< Number of active file descriptors */
@@ -112,6 +118,10 @@ struct re {
 #ifdef HAVE_KQUEUE
 	struct kevent *evlist;
 	int kqfd;
+#endif
+    
+#ifdef HAVE_LIBUV
+    uv_loop_t *uv_loop;
 #endif
 
 #ifdef HAVE_PTHREAD
@@ -139,6 +149,9 @@ static struct re global_re = {
 #ifdef HAVE_KQUEUE
 	NULL,
 	-1,
+#endif
+#ifdef HAVE_LIBUV
+    NULL,
 #endif
 #ifdef HAVE_PTHREAD
 #if MAIN_DEBUG && defined (PTHREAD_ERRORCHECK_MUTEX_INITIALIZER_NP)
@@ -372,6 +385,74 @@ static int set_kqueue_fds(struct re *re, int fd, int flags)
 }
 #endif
 
+#ifdef HAVE_LIBUV
+
+static void connection_poll_cb(uv_poll_t* handle, int status, int events)
+{
+
+    struct re *re = re_get();
+    int fd = handle->data;
+    int flags = 0;
+
+    if (status < 0) 
+        flags |= FD_EXCEP;
+    if (events & UV_READABLE)
+        flags |= FD_READ;
+    if (events & UV_WRITABLE)
+        flags |= FD_WRITE;
+
+    re->fhs[fd].fh(flags, re->fhs[fd].arg);
+
+}
+
+static void close_cb (uv_handle_t* handle)
+{
+    struct re *re = re_get();
+    int fd = handle->data;
+}
+
+static int set_libuv_fds(struct re *re, int fd, int flags)
+{
+  
+    struct re *re = re_get();
+	
+    int events = 0;
+	int err = 0;
+
+	if (!re->uv_loop)
+		return EBADFD;
+    
+    uv_poll_t* uv_poll = re->fhs[fd].uv_poll;
+
+	DEBUG_INFO("set_libuv_fds: fd=%d flags=0x%02x\n", fd, flags);
+
+    poll_handle.data
+
+	if (flags) {
+      
+		uv_poll.data = fd;
+
+		if (flags & FD_READ)
+			events |= UV_READABLE;
+		if (flags & FD_WRITE)
+			events |= UV_WRITABLE;
+// 		if (flags & FD_EXCEPT)
+        
+        if (uv_poll_init_socket (re->uv_loop, uv_poll, fd) != 0) {
+            err = 1;
+        } else if (uv_poll_start (uv_poll, events, connection_poll_cb) != 0) {
+            err = 2;
+        }
+
+	}
+	else {
+        uv_poll_stop (uv_poll);
+        uv_close((uv_handle_t *) uv_poll, close_cb);
+	}
+
+	return err;
+}
+#endif
 
 /**
  * Rebuild the file descriptor mapping table. This must be done whenever
@@ -407,6 +488,11 @@ static int rebuild_fds(struct re *re)
 			break;
 #endif
 
+#ifdef HAVE_LIBUV
+		case METHOD_LIBUV:
+			err = set_libuv_fds(re, i, re->fhs[i].flags);
+			break;
+#endif
 		default:
 			break;
 		}
@@ -483,6 +569,25 @@ static int poll_init(struct re *re)
 
 		break;
 #endif
+        
+#ifdef HAVE_LIBUV
+    case METHOD_LIBUV:
+      
+        if (!re->uv_poll_list) {
+			size_t sz = re->maxfds * sizeof(*re->uv_poll_list);
+			re->uv_poll_list = mem_zalloc(sz, NULL);
+			if (!re->uv_poll_list)
+				return ENOMEM;
+		}
+      
+		if (!re->uv_loop) {
+			DEBUG_INFO("creating livuv loop");
+            re->uv_loop = uv_loop_new();
+			if (!re->uv_loop)
+				return errno;
+		}
+		break;
+#endif
 
 	default:
 		break;
@@ -520,6 +625,13 @@ static void poll_close(struct re *re)
 	}
 
 	re->evlist = mem_deref(re->evlist);
+#endif
+    
+#ifdef HAVE_LIBUV
+    if (re->uv_loop) {
+        
+    }
+    re->uv_poll_list = mem_deref(re->uv_poll_list);
 #endif
 }
 
@@ -617,6 +729,14 @@ int fd_listen(int fd, int flags, fd_h *fh, void *arg)
 	case METHOD_KQUEUE:
 		err = set_kqueue_fds(re, fd, flags);
 		break;
+#endif
+        
+#ifdef HAVE_LIBUV
+    case METHOD_LIBUV:
+        if (re->uv_loop == NULL)
+            return EBADFD;
+        err = set_libuv_fds(re, fd, flags);
+        break;
 #endif
 
 	default:
@@ -729,7 +849,7 @@ static int fd_poll(struct re *re)
 		}
 		break;
 #endif
-
+        
 	default:
 		(void)to;
 		DEBUG_WARNING("no polling method set\n");
