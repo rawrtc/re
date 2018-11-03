@@ -333,7 +333,7 @@ subdir('include')
 subdir('src')
 
 # Build library
-library('re', sources,
+re = library('re', sources,
     dependencies: dependencies,
     include_directories: include_dir,
     install: true,
@@ -341,6 +341,11 @@ library('re', sources,
 
 # Install headers
 install_headers(includes, subdir: 're')
+
+# Declare dependency
+re_dep = declare_dependency(
+    include_directories: include_dir,
+    link_with: re)
 
 # TODO: Generate pkg-config file
 # TODO: Ensure 'install' has the same result as when invoking 'make'
