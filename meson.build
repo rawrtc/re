@@ -2,7 +2,7 @@
 project('re', 'c',
     version: '0.5.9',
     default_options: ['c_std=c99'],
-    meson_version: '>=0.45.0')
+    meson_version: '>=0.46.0')
 
 # Set compiler warning flags
 compiler = meson.get_compiler('c')
@@ -34,6 +34,7 @@ add_project_arguments(compiler_args, language: 'c')
 #       configuration.
 #       This would allow projects depending on this able to import those
 #       defines, too.
+compile_args = []
 configuration = configuration_data()
 
 # OS
@@ -68,9 +69,11 @@ elif system == 'netbsd'
 elif system == 'sunos'
     add_project_arguments('-DSOLARIS', language: 'c')
     configuration.set('SOLARIS', 1)
+    compile_args += '-DSOLARIS'
 elif system == 'windows'
     add_project_arguments('-DWIN32', language: 'c')
     configuration.set('WIN32', 1)
+    compile_args += '-DWIN32'
 else
     warning('Unhandled OS: @0@'.format(system))
 endif
@@ -94,6 +97,7 @@ if openssl_dep.found()
         language: 'c')
     configuration.set('USE_OPENSSL', 1)
     configuration.set('USE_TLS', 1)
+    compile_args += '-DUSE_OPENSSL'
 
     # Check for DTLS
     if compiler.has_header('openssl/dtls1.h')
@@ -123,6 +127,7 @@ zlib_dep = dependency('zlib', version: '>=1.2.8', required: false)
 if zlib_dep.found()
     add_project_arguments('-DUSE_ZLIB', language: 'c')
     configuration.set('USE_ZLIB', 1)
+    compile_args += '-DUSE_ZLIB'
 endif
 
 # Dependencies list
@@ -141,11 +146,16 @@ add_project_arguments(
 configuration.set('HAVE_INET6', 1)
 configuration.set('HAVE_SELECT', 1)
 configuration.set('HAVE_STDBOOL_H', 1)
+compile_args += [
+    '-DHAVE_INET6',
+    '-DHAVE_STDBOOL_H',
+]
 
 # Features: Check for fixed size integer types
 if compiler.has_header('inttypes.h')
     add_project_arguments('-DHAVE_INTTYPES_H', language: 'c')
     configuration.set('HAVE_INTTYPES_H', 1)
+    compile_args += '-DHAVE_INTTYPES_H'
 endif
 
 # Features: Check for route
@@ -173,6 +183,7 @@ if system == 'windows'
     configuration.set('HAVE_IO_H', 1)
     configuration.set('_WIN32_WINNT', 0x0501)
     configuration.set('__ssize_t_defined', 1)
+    compile_args += '-D__ssize_t_defined'
 
     # Additional linking
     dependencies += compiler.find_library('wsock32', required: true)
@@ -208,6 +219,7 @@ else
     configuration.set('HAVE_SYS_TIME_H', 1)
     configuration.set('HAVE_UNAME', 1)
     configuration.set('HAVE_UNISTD_H', 1)
+    compile_args += '-DHAVE_GAI_STRERROR'
 
     # Solaris requires some additional linking
     if system == 'sunos'
@@ -318,6 +330,7 @@ configuration.set('VER_MINOR', version_array[1])
 configuration.set('VER_PATCH', version_array[2])
 
 # TODO: Define 'RELEASE' when using build type 'release'
+#       Also, compile_args += '-DMBUF_DEBUG=1' in that case
 # TODO: Check if we need to do anything for gcov
 # TODO: Check if we need to do anything for GNU profiling
 # TODO: Port packaging section
@@ -344,8 +357,20 @@ install_headers(includes, subdir: 're')
 
 # Declare dependency
 re_dep = declare_dependency(
+    compile_args: compile_args,
     include_directories: include_dir,
     link_with: re)
 
-# TODO: Generate pkg-config file
+# Generate pkg-config file
+pkg = import('pkgconfig')
+description = '''Generic library for real-time communications with
+                 async IO support'''
+description = ' '.join(description.split())
+pkg.generate(re,
+    name: 'libre',
+    description: description,
+    url: 'http://www.creytiv.com/re.html',
+    extra_cflags: compile_args,  # https://github.com/creytiv/re/issues/167
+    subdirs: 're')
+
 # TODO: Ensure 'install' has the same result as when invoking 'make'
