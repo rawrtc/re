@@ -326,9 +326,7 @@ configuration.set('VER_PATCH', version_array[2])
 
 # Includes
 include_dir = include_directories('include')
-includes = [
-    'include/re.h'
-]
+subdir('include')
 
 # Sources & Modules
 # TODO: Make which to build configurable
