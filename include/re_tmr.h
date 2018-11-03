@@ -4,6 +4,9 @@
  * Copyright (C) 2010 Creytiv.com
  */
 
+#ifdef HAVE_LIBUV
+#include <uv.h>
+#endif
 
 /**
  * Defines the timeout handler
@@ -18,6 +21,9 @@ struct tmr {
 	tmr_h *th;          /**< Timeout handler     */
 	void *arg;          /**< Handler argument    */
 	uint64_t jfs;       /**< Jiffies for timeout */
+#ifdef HAVE_LIBUV
+    uv_timer_t* uv_timer;   /**< libbuv handler      */
+#endif
 };
 
 

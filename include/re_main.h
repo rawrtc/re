@@ -4,6 +4,9 @@
  * Copyright (C) 2010 Creytiv.com
  */
 
+#ifdef HAVE_LIBUV
+#include <uv.h>
+#endif
 
 enum {
 #ifndef FD_READ
@@ -41,6 +44,9 @@ int   libre_init(void);
 void  libre_close(void);
 
 int   re_main(re_signal_h *signalh);
+#if HAVE_LIBUV
+int   re_main_uvloop (uv_loop_t* loop, re_signal_h *signalh );
+#endif
 void  re_cancel(void);
 int   re_debug(struct re_printf *pf, void *unused);
 
@@ -65,6 +71,7 @@ enum poll_method {
 };
 
 int              poll_method_set(enum poll_method method);
+enum poll_method poll_method_get (void);
 enum poll_method poll_method_best(void);
 const char      *poll_method_name(enum poll_method method);
 int poll_method_type(enum poll_method *method, const struct pl *name);
