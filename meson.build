@@ -165,7 +165,7 @@ if have_net_route
     configuration.set('HAVE_NET_ROUTE_H', 1)
 endif
 
-# Check for sysctl
+# Features: Check for sysctl
 have_sysctl = compiler.has_header('sys/sysctl.h')
 if have_sysctl
     add_project_arguments('-DHAVE_SYS_SYSCTL_H', language: 'c')
