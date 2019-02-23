@@ -1,5 +1,5 @@
 # Project definition
-project('re', 'c',
+project('rawrre', 'c',
     version: '0.5.9',
     default_options: ['c_std=c99'],
     meson_version: '>=0.46.0')
@@ -346,7 +346,7 @@ subdir('include')
 subdir('src')
 
 # Build library
-re = library('re', sources,
+re = library(meson.project_name(), sources,
     dependencies: dependencies,
     include_directories: include_dir,
     install: true,
