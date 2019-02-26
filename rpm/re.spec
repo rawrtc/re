@@ -1,5 +1,5 @@
 %define name     re
-%define ver      0.5.9
+%define ver      0.6.0
 %define rel      1
 
 Summary: Generic library for real-time communications with async IO support
@@ -53,9 +53,8 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/re/*.h
 /usr/share/re/re.mk
 %{_libdir}/libre*.a
-
+%{_libdir}/pkgconfig/libre.pc
 
 %changelog
 * Fri Nov 5 2010 Alfred E. Heggestad <aeh@db.org> -
 - Initial build.
-

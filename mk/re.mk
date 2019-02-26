@@ -594,7 +594,6 @@ endif
 CFLAGS  += -DHAVE_UNAME
 CFLAGS  += -DHAVE_UNISTD_H
 CFLAGS  += -DHAVE_STRINGS_H
-CFLAGS  += -DHAVE_GAI_STRERROR
 endif
 
 ifneq ($(HAVE_ARC4RANDOM),)
@@ -610,6 +609,11 @@ CCACHE	:= $(shell [ -e /usr/bin/ccache ] 2>/dev/null \
 	|| [ -e /opt/local/bin/ccache ] \
 	&& echo "ccache")
 CFLAGS  += -DVERSION=\"$(VERSION)\"
+CFLAGS  += \
+	-DVER_MAJOR=$(VER_MAJOR) \
+	-DVER_MINOR=$(VER_MINOR) \
+	-DVER_PATCH=$(VER_PATCH)
+
 
 # Enable gcov Coverage testing
 #
