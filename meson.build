@@ -195,7 +195,6 @@ else
     # UNIX
     add_project_arguments(
         '-DHAVE_FORK',
-        '-DHAVE_GAI_STRERROR',
         '-DHAVE_INET_NTOP',
         '-DHAVE_PWD_H',
         '-DHAVE_SELECT_H',
@@ -208,7 +207,6 @@ else
         '-DHAVE_UNISTD_H',
         language: 'c')
     configuration.set('HAVE_FORK', 1)
-    configuration.set('HAVE_GAI_STRERROR', 1)
     configuration.set('HAVE_INET_NTOP', 1)
     configuration.set('HAVE_PWD_H', 1)
     configuration.set('HAVE_SELECT_H', 1)
@@ -219,7 +217,6 @@ else
     configuration.set('HAVE_SYS_TIME_H', 1)
     configuration.set('HAVE_UNAME', 1)
     configuration.set('HAVE_UNISTD_H', 1)
-    compile_args += '-DHAVE_GAI_STRERROR'
 
     # Solaris requires some additional linking
     if system == 'sunos'
