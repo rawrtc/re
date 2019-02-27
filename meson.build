@@ -1,6 +1,6 @@
 # Project definition
 project('rawrre', 'c',
-    version: '0.5.9',
+    version: '0.6.0',
     default_options: ['c_std=c99'],
     meson_version: '>=0.46.0')
 
