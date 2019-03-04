@@ -47,7 +47,9 @@
 #include <stdlib.h>
 #include <pthread.h>
 #endif
-
+#ifdef HAVE_LIBUV
+#include <uv.h>
+#endif
 
 #define DEBUG_MODULE "main"
 #define DEBUG_LEVEL 5
@@ -91,6 +93,9 @@ struct re {
 		int flags;           /**< Polling flags (Read, Write, etc.) */
 		fd_h *fh;            /**< Event handler                     */
 		void *arg;           /**< Handler argument                  */
+#ifdef HAVE_LIBUV
+        uv_poll_t uv_poll;   /**< libuv handler                     */
+#endif
 	} *fhs;
 	int maxfds;                  /**< Maximum number of polling fds     */
 	int nfds;                    /**< Number of active file descriptors */
@@ -112,6 +117,11 @@ struct re {
 #ifdef HAVE_KQUEUE
 	struct kevent *evlist;
 	int kqfd;
+#endif
+    
+#ifdef HAVE_LIBUV
+    bool uv_loop_is_external;
+    uv_loop_t *uv_loop;
 #endif
 
 #ifdef HAVE_PTHREAD
@@ -139,6 +149,10 @@ static struct re global_re = {
 #ifdef HAVE_KQUEUE
 	NULL,
 	-1,
+#endif
+#ifdef HAVE_LIBUV
+    false,
+    NULL,
 #endif
 #ifdef HAVE_PTHREAD
 #if MAIN_DEBUG && defined (PTHREAD_ERRORCHECK_MUTEX_INITIALIZER_NP)
@@ -372,6 +386,70 @@ static int set_kqueue_fds(struct re *re, int fd, int flags)
 }
 #endif
 
+#ifdef HAVE_LIBUV
+
+static void libuv_fd_close (uv_handle_t* handle) {
+
+}
+
+static void connection_poll_cb(uv_poll_t* handle, int status, int events)
+{
+
+    struct re *re = re_get();
+    int fd = (int) handle->data;
+    int flags = 0;
+
+    if (status < 0) 
+        flags |= FD_EXCEPT;
+    if (events & UV_READABLE)
+        flags |= FD_READ;
+    if (events & UV_WRITABLE)
+        flags |= FD_WRITE;
+
+    re->fhs[fd].fh(flags, re->fhs[fd].arg);
+
+}
+
+static int set_libuv_fds(struct re *re, int fd, int flags)
+{
+    int events = 0;
+	int err = 0;
+
+	if (re->uv_loop == NULL) {
+		return EBADFD;
+    }
+
+    uv_poll_t* uv_poll = &re->fhs[fd].uv_poll;
+
+	DEBUG_INFO("set_libuv_fds: fd=%d flags=0x%02x\n", fd, flags);
+
+	if (flags) {
+      
+		uv_poll->data = (void*)fd;
+
+		if (flags & FD_READ)
+			events |= UV_READABLE;
+		if (flags & FD_WRITE)
+			events |= UV_WRITABLE;
+// 		if (flags & FD_EXCEPT)
+
+        if (uv_poll_init_socket (re->uv_loop, uv_poll, fd) != 0) {
+            err = 1;
+        } else if (uv_poll_start (uv_poll, events, connection_poll_cb) != 0) {
+            err = 2;
+        }
+
+	}
+	else {
+        uv_poll_stop (uv_poll);
+//         if (!uv_is_closing((uv_handle_t *) uv_poll)) {
+//             uv_close ((uv_handle_t *) uv_poll, libuv_fd_close);
+//         }
+	}
+
+	return err;
+}
+#endif
 
 /**
  * Rebuild the file descriptor mapping table. This must be done whenever
@@ -407,6 +485,11 @@ static int rebuild_fds(struct re *re)
 			break;
 #endif
 
+#ifdef HAVE_LIBUV
+		case METHOD_LIBUV:
+			err = set_libuv_fds(re, i, re->fhs[i].flags);
+			break;
+#endif
 		default:
 			break;
 		}
@@ -483,6 +566,18 @@ static int poll_init(struct re *re)
 
 		break;
 #endif
+        
+#ifdef HAVE_LIBUV
+    case METHOD_LIBUV:
+      
+		if (re->uv_loop == NULL) {
+            re->uv_loop = malloc(sizeof *re->uv_loop);
+			if (!re->uv_loop)
+				return errno;
+            uv_loop_init (re->uv_loop);
+		}
+		break;
+#endif
 
 	default:
 		break;
@@ -520,6 +615,16 @@ static void poll_close(struct re *re)
 	}
 
 	re->evlist = mem_deref(re->evlist);
+#endif
+    
+#ifdef HAVE_LIBUV
+    if (re->uv_loop != NULL && !re->uv_loop_is_external) {
+        uv_stop (re->uv_loop);
+//        if (uv_loop_close (re->uv_loop) != UV_EBUSY) {
+//            free (re->uv_loop);
+//            re->uv_loop = NULL;
+//        }
+    }
 #endif
 }
 
@@ -617,6 +722,14 @@ int fd_listen(int fd, int flags, fd_h *fh, void *arg)
 	case METHOD_KQUEUE:
 		err = set_kqueue_fds(re, fd, flags);
 		break;
+#endif
+        
+#ifdef HAVE_LIBUV
+    case METHOD_LIBUV:
+        if (re->uv_loop == NULL)
+            return EBADFD;
+        err = set_libuv_fds(re, fd, flags);
+        break;
 #endif
 
 	default:
@@ -729,7 +842,19 @@ static int fd_poll(struct re *re)
 		}
 		break;
 #endif
-
+        
+#ifdef HAVE_LIBUV
+    case METHOD_LIBUV: {
+          if (re->uv_loop == NULL) {
+              DEBUG_WARNING("no uv_loop\n");
+          } else if (!re->uv_loop_is_external) {
+              int pending = uv_run (re->uv_loop, UV_RUN_NOWAIT);
+          }
+          n = 0;
+        }
+        break;
+#endif
+        
 	default:
 		(void)to;
 		DEBUG_WARNING("no polling method set\n");
@@ -786,6 +911,8 @@ static int fd_poll(struct re *re)
 				flags |= FD_WRITE;
 			if (re->events[i].events & (EPOLLERR|EPOLLHUP))
 				flags |= FD_EXCEPT;
+			if (re->events[i].events & EPOLLHUP)
+				flags |= FD_EXCEPT;
 
 			if (!flags) {
 				DEBUG_WARNING("epoll: no flags fd=%d\n", fd);
@@ -829,6 +956,12 @@ static int fd_poll(struct re *re)
 			}
 		}
 			break;
+#endif
+#ifdef HAVE_LIBUV
+        case METHOD_LIBUV: {
+            // noop
+        }
+            break;
 #endif
 
 		default:
@@ -986,11 +1119,17 @@ int re_main(re_signal_h *signalh)
 			if (EBADF == err)
 				continue;
 #endif
-
 			break;
 		}
-
-		tmr_poll(&re->tmrl);
+#ifdef HAVE_LIBUV
+        switch (re->method) {
+            case METHOD_LIBUV:
+                break;
+            default:
+                tmr_poll(&re->tmrl);
+                break;
+        }
+#endif
 	}
 	re_unlock(re);
 
@@ -998,6 +1137,16 @@ int re_main(re_signal_h *signalh)
 	re->polling = false;
 
 	return err;
+}
+
+int re_main_uvloop (uv_loop_t* loop, re_signal_h *signalh) {
+    
+    struct re *re = re_get();
+    re->uv_loop_is_external = true;
+    re->uv_loop = loop;
+
+    return re_main (signalh);
+
 }
 
 
@@ -1036,6 +1185,10 @@ int re_debug(struct re_printf *pf, void *unused)
 	return err;
 }
 
+enum poll_method poll_method_get () {
+    struct re *re = re_get();
+    return re->method;
+}
 
 /**
  * Set async I/O polling method. This function can also be called while the
@@ -1077,6 +1230,10 @@ int poll_method_set(enum poll_method method)
 #ifdef HAVE_KQUEUE
 	case METHOD_KQUEUE:
 		break;
+#endif
+#ifdef HAVE_LIBUV
+    case METHOD_LIBUV:
+        break;
 #endif
 	default:
 		DEBUG_WARNING("poll method not supported: '%s'\n",
@@ -1212,3 +1369,18 @@ struct list *tmrl_get(void)
 {
 	return &re_get()->tmrl;
 }
+
+#ifdef HAVE_LIBUV
+/**
+ * Get the uv_loop for this thread
+ *
+ * @return uv_loop_t*
+ *
+ * @note only used by tmr module
+ */
+uv_loop_t* get_libuv_loop(void);
+uv_loop_t* get_libuv_loop(void) {
+    return re_get()->uv_loop;
+}
+
+#endif

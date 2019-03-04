@@ -491,6 +491,15 @@ CFLAGS  += -DUSE_ZLIB
 LIBS    += -lz
 endif
 
+USE_LIBUV    := $(shell [ -f $(SYSROOT)/include/uv.h ] || \
+	[ -f $(SYSROOT)/local/include/uv.h ] || \
+	[ -f $(SYSROOT_ALT)/include/uv.h ] && echo "yes")
+
+ifneq ($(USE_LIBUV),)
+CFLAGS  += -D_XOPEN_SOURCE=600 -DHAVE_LIBUV
+LIBS    += -luv
+endif
+
 
 ifneq ($(OS),win32)
 
@@ -686,6 +695,7 @@ info:
 	@echo "  USE_DTLS:      $(USE_DTLS)"
 	@echo "  USE_DTLS_SRTP: $(USE_DTLS_SRTP)"
 	@echo "  USE_ZLIB:      $(USE_ZLIB)"
+	@echo "  USE_LIBUV:     $(USE_LIBUV)"
 	@echo "  GCOV:          $(GCOV)"
 	@echo "  GPROF:         $(GPROF)"
 	@echo "  CROSS_COMPILE: $(CROSS_COMPILE)"

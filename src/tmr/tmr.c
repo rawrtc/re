@@ -21,7 +21,10 @@
 #include <re_fmt.h>
 #include <re_mem.h>
 #include <re_tmr.h>
-
+#ifdef HAVE_LIBUV
+#include <uv.h>
+#include <re_main.h>
+#endif
 
 #define DEBUG_MODULE "tmr"
 #define DEBUG_LEVEL 5
@@ -38,7 +41,10 @@ enum {
 };
 
 extern struct list *tmrl_get(void);
-
+#ifdef HAVE_LIBUV
+void libuv_timer_handler (uv_timer_t* handler);
+extern uv_loop_t* get_libuv_loop(void);
+#endif
 
 static bool inspos_handler(struct le *le, void *arg)
 {
@@ -224,6 +230,27 @@ void tmr_init(struct tmr *tmr)
 	memset(tmr, 0, sizeof(*tmr));
 }
 
+#ifdef HAVE_LIBUV
+
+static void libuv_timer_close (uv_handle_t* handle) {
+    free (handle);
+}
+
+void libuv_timer_handler (uv_timer_t* handler) {
+
+    struct tmr *tmr = ((uv_timer_t*)handler)->data;
+
+    if (tmr != NULL) {
+        if (tmr->th != NULL) {
+            tmr->th (tmr->arg);
+            tmr->th = NULL;
+        }
+        uv_close((uv_handle_t *)tmr->uv_timer, libuv_timer_close);
+        tmr->uv_timer = NULL;
+    }
+}
+
+#endif 
 
 /**
  * Start a timer
@@ -235,6 +262,41 @@ void tmr_init(struct tmr *tmr)
  */
 void tmr_start(struct tmr *tmr, uint64_t delay, tmr_h *th, void *arg)
 {
+  
+#ifdef HAVE_LIBUV
+    if (poll_method_get() == METHOD_LIBUV) {
+
+        if (!tmr)
+            return;
+
+        tmr->th  = th;
+        tmr->arg = arg;
+
+        if (th != NULL) {
+
+            uv_loop_t* loop = get_libuv_loop();
+            if (tmr->uv_timer == NULL) {
+                uv_timer_t* handler = (uv_timer_t*) malloc (sizeof(uv_timer_t));
+                if (loop != NULL) {
+                    handler->data = tmr;
+                    uv_timer_init  (loop, handler);
+                    tmr->uv_timer = handler;
+                }
+            }
+            tmr->jfs = uv_now(loop) + delay;
+            uv_timer_start (tmr->uv_timer, libuv_timer_handler, delay, 0);
+        } else {
+            if (tmr->uv_timer != NULL) {
+                uv_timer_stop (tmr->uv_timer);
+                uv_close((uv_handle_t *)tmr->uv_timer, libuv_timer_close);
+                tmr->uv_timer = NULL;
+            }
+        }
+
+        return;
+    }
+#endif 
+
 	struct list *tmrl = tmrl_get();
 	struct le *le;
 
@@ -294,10 +356,18 @@ void tmr_cancel(struct tmr *tmr)
  */
 uint64_t tmr_get_expire(const struct tmr *tmr)
 {
-	uint64_t jfs;
-
+    uint64_t jfs;
+	
 	if (!tmr || !tmr->th)
 		return 0;
+
+#ifdef HAVE_LIBUV
+    if (poll_method_get() == METHOD_LIBUV) {
+        uv_loop_t* loop = get_libuv_loop();
+        jfs = uv_now(loop);
+        return (tmr->jfs > jfs) ? (tmr->jfs - jfs) : 0;
+    }
+#endif
 
 	jfs = tmr_jiffies();
 
